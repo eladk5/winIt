@@ -2,9 +2,17 @@ package com.example.bids_server.controller;
 
 import com.example.bids_server.service.AuthService;
 import jakarta.validation.constraints.NotBlank;
+
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -38,6 +46,12 @@ public class AuthController {
     public record LoginResponse(long id, String username) {
     }
 
+    public record SessionUser(long id, String username) {
+    }
+
+    public record MeResponse(long id, String username) {
+    }
+
     @PostMapping("/register")
     public ResponseEntity<RegisterResponse> register(@RequestBody RegisterRequest request) {
         long userId = authService.register(
@@ -55,9 +69,35 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public LoginResponse login(@RequestBody LoginRequest request) {
+    public LoginResponse login(@RequestBody LoginRequest request, HttpServletRequest httpRequest) {
         long userId = authService.login(request.username(), request.password());
+        SessionUser principal = new SessionUser(userId, request.username());
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                principal,
+                null,
+                List.of(new SimpleGrantedAuthority("ROLE_USER")));
+        SecurityContextHolder.getContext().setAuthentication(auth);
+        httpRequest.getSession(true);
+
         return new LoginResponse(userId, request.username());
+    }
+
+    @GetMapping("/me")
+    public MeResponse me() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        if (auth == null
+                || !auth.isAuthenticated()
+                || auth instanceof org.springframework.security.authentication.AnonymousAuthenticationToken) {
+            throw new org.springframework.security.access.AccessDeniedException("Not authenticated");
+        }
+
+        Object principal = auth.getPrincipal();
+        if (principal instanceof SessionUser su) {
+            return new MeResponse(su.id(), su.username());
+        }
+
+        throw new IllegalStateException("Unexpected principal type: " + principal.getClass());
     }
 
 }
