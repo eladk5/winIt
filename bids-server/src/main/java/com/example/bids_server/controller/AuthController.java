@@ -1,0 +1,63 @@
+package com.example.bids_server.controller;
+
+import com.example.bids_server.service.AuthService;
+import jakarta.validation.constraints.NotBlank;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/auth")
+public class AuthController {
+
+    private final AuthService authService;
+
+    public AuthController(AuthService authService) {
+        this.authService = authService;
+    }
+
+    public record RegisterRequest(
+            @NotBlank String username,
+            @NotBlank String password,
+            @NotBlank String firstName,
+            @NotBlank String lastName,
+            @NotBlank String mobilePhone,
+            String city,
+            String street,
+            String zipCode) {
+    }
+
+    public record RegisterResponse(long id, String username) {
+    }
+
+    public record LoginRequest(
+            @NotBlank String username,
+            @NotBlank String password) {
+    }
+
+    public record LoginResponse(long id, String username) {
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<RegisterResponse> register(@RequestBody RegisterRequest request) {
+        long userId = authService.register(
+                request.username(),
+                request.password(),
+                request.firstName(),
+                request.lastName(),
+                request.mobilePhone(),
+                request.city(),
+                request.street(),
+                request.zipCode());
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new RegisterResponse(userId, request.username()));
+    }
+
+    @PostMapping("/login")
+    public LoginResponse login(@RequestBody LoginRequest request) {
+        long userId = authService.login(request.username(), request.password());
+        return new LoginResponse(userId, request.username());
+    }
+
+}
