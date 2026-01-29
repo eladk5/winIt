@@ -3,7 +3,11 @@ package com.example.bids_server.controller;
 import com.example.bids_server.repository.Product;
 import com.example.bids_server.repository.ProductSearchQuery;
 import com.example.bids_server.service.ProductsService;
+import com.example.bids_server.service.ProductsService.CreateProductRequest;
+import com.example.bids_server.service.ProductsService.CreatedProduct;
+
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,7 +27,7 @@ public class ProductsController {
 
     @GetMapping("/products")
     public ResponseEntity<List<ProductCardResponse>> listProducts(
-            @RequestParam(required = false) String category, 
+            @RequestParam(required = false) String category,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) Boolean hasImage,
 
@@ -44,7 +48,7 @@ public class ProductsController {
                 endTo,
                 minPrice,
                 maxPrice,
-                true, 
+                true,
                 parseSortBy(sortBy),
                 parseSortDir(sortDir));
 
@@ -97,5 +101,17 @@ public class ProductsController {
                     p.deliveryLocation(),
                     p.category());
         }
+    }
+
+    @PostMapping("/products")
+    public ResponseEntity<CreateProductResponse> createProduct(@RequestBody CreateProductRequest req) {
+        CreatedProduct created = productsService.createProduct(req);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new CreateProductResponse(created.id(), created.endTime()));
+    }
+
+    public record CreateProductResponse(
+            long id,
+            LocalDateTime endTime) {
     }
 }

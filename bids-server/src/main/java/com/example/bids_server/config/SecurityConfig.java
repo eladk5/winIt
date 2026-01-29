@@ -23,40 +23,47 @@ import org.springframework.security.web.authentication.logout.HttpStatusReturnin
 @Configuration
 public class SecurityConfig {
 
-    /**
-     * Defines the application's security filter chain.
-     *
-     * @param http HttpSecurity builder used to configure security behavior
-     * @return the configured SecurityFilterChain
-     * @throws Exception if a security configuration error occurs
-     */
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-                .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
+        /**
+         * Defines the application's security filter chain.
+         *
+         * @param http HttpSecurity builder used to configure security behavior
+         * @return the configured SecurityFilterChain
+         * @throws Exception if a security configuration error occurs
+         */
+        @Bean
+        public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+                http
+                                .headers(headers -> headers
+                                                .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
 
-                .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**", "/api/auth/**"))
+                                .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**", "/api/auth/**",
+                                                "/api/products"))
 
-                .logout(logout -> logout
-                        .logoutUrl("/api/auth/logout")
-                        .invalidateHttpSession(true)
-                        .clearAuthentication(true)
-                        .deleteCookies("JSESSIONID")
-                        .logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler(HttpStatus.NO_CONTENT)))
+                                .logout(logout -> logout
+                                                .logoutUrl("/api/auth/logout")
+                                                .invalidateHttpSession(true)
+                                                .clearAuthentication(true)
+                                                .deleteCookies("JSESSIONID")
+                                                .logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler(
+                                                                HttpStatus.NO_CONTENT)))
 
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/h2-console/**").permitAll()
-                        .requestMatchers("/api/auth/register", "/api/auth/login", "/api/products").permitAll()
-                        .requestMatchers("/error").permitAll()
-                        .anyRequest().authenticated())
-                .securityContext(sc -> sc.requireExplicitSave(false))
-                .formLogin(form -> form.disable())
-                .httpBasic(basic -> basic.disable())
-                .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint((request, response, authException) -> response.sendError(401))
-                        .accessDeniedHandler((request, response, accessDeniedException) -> response.sendError(403)));
+                                .authorizeHttpRequests(auth -> auth
+                                                .requestMatchers("/h2-console/**").permitAll()
+                                                .requestMatchers("/api/auth/register", "/api/auth/login",
+                                                                "/api/products")
+                                                .permitAll()
+                                                .requestMatchers("/error").permitAll()
+                                                .anyRequest().authenticated())
+                                .securityContext(sc -> sc.requireExplicitSave(false))
+                                .formLogin(form -> form.disable())
+                                .httpBasic(basic -> basic.disable())
+                                .exceptionHandling(ex -> ex
+                                                .authenticationEntryPoint((request, response, authException) -> response
+                                                                .sendError(401))
+                                                .accessDeniedHandler((request, response,
+                                                                accessDeniedException) -> response.sendError(403)));
 
-        return http.build();
-    }
+                return http.build();
+        }
 
 }

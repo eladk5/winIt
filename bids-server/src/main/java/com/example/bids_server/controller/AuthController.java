@@ -1,5 +1,6 @@
 package com.example.bids_server.controller;
 
+import com.example.bids_server.security.SessionUser;
 import com.example.bids_server.service.AuthService;
 import jakarta.validation.constraints.NotBlank;
 
@@ -47,9 +48,6 @@ public class AuthController {
     }
 
     public record LoginResponse(long id, String username) {
-    }
-
-    public record SessionUser(long id, String username) {
     }
 
     public record MeResponse(long id, String username) {
