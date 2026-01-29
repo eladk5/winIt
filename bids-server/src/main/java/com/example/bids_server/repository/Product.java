@@ -5,7 +5,6 @@ import java.time.LocalDateTime;
 
 /**
  * Represents a row in the 'products' table.
- * We keep it simple and close to the DB schema (JDBC style).
  */
 public record Product(
         long id,

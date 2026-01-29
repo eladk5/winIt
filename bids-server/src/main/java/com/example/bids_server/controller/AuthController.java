@@ -9,6 +9,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpServletRequest;
+
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -88,8 +91,8 @@ public class AuthController {
 
         if (auth == null
                 || !auth.isAuthenticated()
-                || auth instanceof org.springframework.security.authentication.AnonymousAuthenticationToken) {
-            throw new org.springframework.security.access.AccessDeniedException("Not authenticated");
+                || auth instanceof AnonymousAuthenticationToken) {
+            throw new AccessDeniedException("Not authenticated");
         }
 
         Object principal = auth.getPrincipal();

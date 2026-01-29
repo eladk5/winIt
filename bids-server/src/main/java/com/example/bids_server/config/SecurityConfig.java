@@ -46,7 +46,7 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/h2-console/**").permitAll()
-                        .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
+                        .requestMatchers("/api/auth/register", "/api/auth/login", "/api/products").permitAll()
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated())
                 .securityContext(sc -> sc.requireExplicitSave(false))
