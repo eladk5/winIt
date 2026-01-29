@@ -130,4 +130,10 @@ public class ProductsService {
             long id,
             LocalDateTime endTime) {
     }
+
+    public Product getProduct(long productId) {
+        return productsRepository.findById(productId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+    }
+
 }

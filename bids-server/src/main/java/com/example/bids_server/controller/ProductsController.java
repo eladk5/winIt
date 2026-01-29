@@ -110,8 +110,42 @@ public class ProductsController {
                 .body(new CreateProductResponse(created.id(), created.endTime()));
     }
 
+    @GetMapping("/products/{id}")
+    public ResponseEntity<ProductDetailsResponse> getProductById(@PathVariable long id) {
+        Product p = productsService.getProduct(id);
+        return ResponseEntity.ok(ProductDetailsResponse.fromProduct(p));
+    }
+
     public record CreateProductResponse(
             long id,
             LocalDateTime endTime) {
+    }
+
+    public record ProductDetailsResponse(
+            long id,
+            String name,
+            String description,
+            String category,
+            String deliveryLocation,
+            String imageUrl,
+            LocalDateTime startTime,
+            LocalDateTime endTime,
+            BigDecimal startingPrice,
+            BigDecimal currentPrice,
+            Long leadingBidId) {
+        public static ProductDetailsResponse fromProduct(Product p) {
+            return new ProductDetailsResponse(
+                    p.id(),
+                    p.name(),
+                    p.description(),
+                    p.category(),
+                    p.deliveryLocation(),
+                    p.imageUrl(),
+                    p.startTime(),
+                    p.endTime(),
+                    p.startingPrice(),
+                    p.currentPrice(),
+                    p.leadingBidId());
+        }
     }
 }
