@@ -37,7 +37,7 @@ public class SecurityConfig {
                                                 .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
 
                                 .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**", "/api/auth/**",
-                                                "/api/products"))
+                                                "/api/products", "/api/products/**", "/api/bids/**"))
 
                                 .logout(logout -> logout
                                                 .logoutUrl("/api/auth/logout")
@@ -50,7 +50,7 @@ public class SecurityConfig {
                                 .authorizeHttpRequests(auth -> auth
                                                 .requestMatchers("/h2-console/**").permitAll()
                                                 .requestMatchers("/api/auth/register", "/api/auth/login",
-                                                                "/api/products", "/api/products/**")
+                                                                "/api/products", "/api/products/**", "/api/bids/**")
                                                 .permitAll()
                                                 .requestMatchers("/error").permitAll()
                                                 .anyRequest().authenticated())

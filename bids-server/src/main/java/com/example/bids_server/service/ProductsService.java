@@ -3,30 +3,23 @@ package com.example.bids_server.service;
 import com.example.bids_server.repository.Product;
 import com.example.bids_server.repository.ProductSearchQuery;
 import com.example.bids_server.repository.ProductsRepository;
-import com.example.bids_server.repository.UsersRepository;
-import com.example.bids_server.security.SessionUser;
-
 import org.springframework.http.HttpStatus;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class ProductsService {
 
     private final ProductsRepository productsRepository;
-    private final UsersRepository usersRepository;
+    private final CurrentUserService currentUserService;
 
-    public ProductsService(ProductsRepository productsRepository, UsersRepository usersRepository) {
+    public ProductsService(ProductsRepository productsRepository, CurrentUserService currentUserService) {
         this.productsRepository = productsRepository;
-        this.usersRepository = usersRepository;
+        this.currentUserService = currentUserService;
     }
 
     /**
@@ -35,7 +28,7 @@ public class ProductsService {
      * - If logged-in, excludes products where the user is the seller.
      */
     public List<Product> searchCatalog(ProductSearchQuery q) {
-        Long excludeSellerId = resolveLoggedInUserId().orElse(null);
+        Long excludeSellerId = currentUserService.resolveLoggedInUserId().orElse(null);
 
         ProductSearchQuery qForcedActive = new ProductSearchQuery(
                 q.category(),
@@ -52,26 +45,8 @@ public class ProductsService {
         return productsRepository.searchProducts(qForcedActive, excludeSellerId);
     }
 
-    private Optional<Long> resolveLoggedInUserId() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-
-        if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
-            return Optional.empty();
-        }
-
-        Object principal = auth.getPrincipal();
-        if (principal instanceof SessionUser su) {
-            return Optional.of(su.id());
-        }
-
-        return Optional.empty();
-    }
-
     public CreatedProduct createProduct(CreateProductRequest req) {
-        long sellerId = resolveLoggedInUserId()
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.UNAUTHORIZED,
-                        "Not authenticated"));
+        long sellerId = currentUserService.requireAuthenticatedUserId();
 
         if (req.name() == null || req.name().isBlank()) {
             throw new IllegalArgumentException("name is required");
