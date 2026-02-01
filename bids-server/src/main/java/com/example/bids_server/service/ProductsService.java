@@ -1,6 +1,7 @@
 package com.example.bids_server.service;
 
 import com.example.bids_server.repository.Product;
+import com.example.bids_server.repository.ProductCategory;
 import com.example.bids_server.repository.ProductSearchQuery;
 import com.example.bids_server.repository.ProductsRepository;
 import org.springframework.http.HttpStatus;
@@ -51,7 +52,7 @@ public class ProductsService {
         if (req.name() == null || req.name().isBlank()) {
             throw new IllegalArgumentException("name is required");
         }
-        ProductSearchQuery.Category cat = ProductSearchQuery.Category.fromString(req.category());
+        ProductCategory cat = ProductCategory.fromString(req.category());
         if (cat == null) {
             throw new IllegalArgumentException("category is required");
         }

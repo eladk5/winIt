@@ -1,6 +1,7 @@
 package com.example.bids_server.controller;
 
 import com.example.bids_server.repository.Product;
+import com.example.bids_server.repository.ProductCategory;
 import com.example.bids_server.repository.ProductSearchQuery;
 import com.example.bids_server.service.ProductsService;
 import com.example.bids_server.service.ProductsService.CreateProductRequest;
@@ -25,6 +26,14 @@ public class ProductsController {
         this.productsService = productsService;
     }
 
+    @GetMapping("/categories")
+    public ResponseEntity<List<String>> listCategories() {
+        List<String> categories = List.of(ProductCategory.values()).stream()
+                .map(ProductCategory::apiValue)
+                .toList();
+        return ResponseEntity.ok(categories);
+    }
+
     @GetMapping("/products")
     public ResponseEntity<List<ProductCardResponse>> listProducts(
             @RequestParam(required = false) String category,
@@ -41,7 +50,7 @@ public class ProductsController {
             @RequestParam(required = false) String sortBy,
             @RequestParam(required = false) String sortDir) {
         ProductSearchQuery q = new ProductSearchQuery(
-                ProductSearchQuery.Category.fromString(category),
+                ProductCategory.fromString(category),
                 search,
                 hasImage,
                 endFrom,

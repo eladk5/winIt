@@ -1,6 +1,7 @@
 package com.example.bids_server;
 
 import com.example.bids_server.repository.Product;
+import com.example.bids_server.repository.ProductCategory;
 import com.example.bids_server.repository.ProductSearchQuery;
 import com.example.bids_server.repository.ProductsRepository;
 import com.example.bids_server.repository.UsersRepository;
@@ -59,7 +60,7 @@ class ProductsRepositoryTest {
     private long createProduct(
             long sellerId,
             String name,
-            ProductSearchQuery.Category category,
+            ProductCategory category,
             String description,
             String imageUrl,
             LocalDateTime startTime,
@@ -89,7 +90,7 @@ class ProductsRepositoryTest {
         long active1 = createProduct(
                 sellerA,
                 PRODUCT_PREFIX + "active1",
-                ProductSearchQuery.Category.ELECTRONICS,
+                ProductCategory.ELECTRONICS,
                 "Active product",
                 "http://img.com/a.jpg",
                 now.minusHours(1),
@@ -99,7 +100,7 @@ class ProductsRepositoryTest {
         long ended1 = createProduct(
                 sellerA,
                 PRODUCT_PREFIX + "ended1",
-                ProductSearchQuery.Category.ELECTRONICS,
+                ProductCategory.ELECTRONICS,
                 "Ended product",
                 null,
                 now.minusHours(5),
@@ -123,7 +124,7 @@ class ProductsRepositoryTest {
         long myProduct = createProduct(
                 sellerA,
                 PRODUCT_PREFIX + "myListing",
-                ProductSearchQuery.Category.ELECTRONICS,
+                ProductCategory.ELECTRONICS,
                 "My listing",
                 "http://img.com/me.jpg",
                 now.minusHours(1),
@@ -133,7 +134,7 @@ class ProductsRepositoryTest {
         long otherProduct = createProduct(
                 sellerB,
                 PRODUCT_PREFIX + "otherListing",
-                ProductSearchQuery.Category.ELECTRONICS,
+                ProductCategory.ELECTRONICS,
                 "Other listing",
                 null,
                 now.minusHours(1),
@@ -156,7 +157,7 @@ class ProductsRepositoryTest {
         long ps5 = createProduct(
                 seller,
                 PRODUCT_PREFIX + "ps5",
-                ProductSearchQuery.Category.ELECTRONICS,
+                ProductCategory.ELECTRONICS,
                 "Sony PlayStation 5 like new",
                 "http://img.com/ps5.jpg",
                 now.minusHours(1),
@@ -166,7 +167,7 @@ class ProductsRepositoryTest {
         long camera = createProduct(
                 seller,
                 PRODUCT_PREFIX + "camera",
-                ProductSearchQuery.Category.CAMERAS,
+                ProductCategory.CAMERAS,
                 "Vintage camera",
                 "http://img.com/cam.jpg",
                 now.minusHours(1),
@@ -176,7 +177,7 @@ class ProductsRepositoryTest {
         long noImageElectronics = createProduct(
                 seller,
                 PRODUCT_PREFIX + "laptop_no_img",
-                ProductSearchQuery.Category.ELECTRONICS,
+                ProductCategory.ELECTRONICS,
                 "Laptop great condition",
                 null,
                 now.minusHours(1),
@@ -184,7 +185,7 @@ class ProductsRepositoryTest {
                 new BigDecimal("600.00"));
 
         ProductSearchQuery q = new ProductSearchQuery(
-                ProductSearchQuery.Category.ELECTRONICS, // category
+                ProductCategory.ELECTRONICS, // category
                 "playstation", // search
                 true, // hasImage
                 null, null, // endFrom/endTo
@@ -210,7 +211,7 @@ class ProductsRepositoryTest {
         long p500 = createProduct(
                 seller,
                 PRODUCT_PREFIX + "p500",
-                ProductSearchQuery.Category.ELECTRONICS,
+                ProductCategory.ELECTRONICS,
                 "cheap item",
                 null,
                 now.minusHours(1),
@@ -220,7 +221,7 @@ class ProductsRepositoryTest {
         long p800 = createProduct(
                 seller,
                 PRODUCT_PREFIX + "p800",
-                ProductSearchQuery.Category.ELECTRONICS,
+                ProductCategory.ELECTRONICS,
                 "mid item",
                 "http://img.com/mid.jpg",
                 now.minusHours(1),
@@ -230,7 +231,7 @@ class ProductsRepositoryTest {
         long p1200 = createProduct(
                 seller,
                 PRODUCT_PREFIX + "p1200",
-                ProductSearchQuery.Category.ELECTRONICS,
+                ProductCategory.ELECTRONICS,
                 "expensive item",
                 "http://img.com/exp.jpg",
                 now.minusHours(1),
@@ -238,7 +239,7 @@ class ProductsRepositoryTest {
                 new BigDecimal("1200.00"));
 
         ProductSearchQuery q = new ProductSearchQuery(
-                ProductSearchQuery.Category.ELECTRONICS,
+                ProductCategory.ELECTRONICS,
                 null,
                 null,
                 now.plusMinutes(30),
