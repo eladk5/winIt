@@ -6,6 +6,7 @@ import com.example.bids_server.repository.ProductSearchQuery;
 import com.example.bids_server.repository.ProductsRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
@@ -17,10 +18,12 @@ public class ProductsService {
 
     private final ProductsRepository productsRepository;
     private final CurrentUserService currentUserService;
+    private final FileStorageService fileStorageService;
 
-    public ProductsService(ProductsRepository productsRepository, CurrentUserService currentUserService) {
+    public ProductsService(ProductsRepository productsRepository, CurrentUserService currentUserService, FileStorageService fileStorageService) {
         this.productsRepository = productsRepository;
         this.currentUserService = currentUserService;
+        this.fileStorageService = fileStorageService;
     }
 
     /**
@@ -66,6 +69,11 @@ public class ProductsService {
             throw new IllegalArgumentException("durationMinutes must be >= 10");
         }
 
+        String imageUrl = null;
+        if (req.image() != null && !req.image().isEmpty()) {
+            imageUrl = fileStorageService.saveFile(req.image());
+        }
+
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime endTime = now.plusMinutes(req.durationMinutes());
 
@@ -75,7 +83,7 @@ public class ProductsService {
                 trimToNull(req.description()),
                 cat.apiValue(),
                 req.deliveryLocation().trim(),
-                trimToNull(req.imageUrl()),
+                imageUrl,
                 now,
                 endTime,
                 req.startingPrice(),
@@ -97,7 +105,7 @@ public class ProductsService {
             String description,
             String category,
             String deliveryLocation,
-            String imageUrl,
+            MultipartFile image,
             BigDecimal startingPrice,
             Integer durationMinutes) {
     }

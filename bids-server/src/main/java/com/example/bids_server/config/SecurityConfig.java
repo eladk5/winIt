@@ -53,6 +53,7 @@ public class SecurityConfig {
                                                                 "/api/categories",
                                                                 "/api/products", "/api/products/**", "/api/bids/**")
                                                 .permitAll()
+                                                .requestMatchers("/uploads/**").permitAll()
                                                 .requestMatchers("/error").permitAll()
                                                 .anyRequest().authenticated())
                                 .securityContext(sc -> sc.requireExplicitSave(false))

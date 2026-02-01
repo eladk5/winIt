@@ -91,24 +91,16 @@ public class MeControllerTest {
 
 
     private long createProductAsSeller(String name, int durationMinutes, int startingPrice) throws Exception {
-        String body = """
-                {
-                  "name": "%s",
-                  "description": "demo",
-                  "category": "electronics",
-                  "deliveryLocation": "Petah Tikva",
-                  "imageUrl": null,
-                  "startingPrice": %d,
-                  "durationMinutes": %d
-                }
-                """.formatted(name, startingPrice, durationMinutes);
-
         @SuppressWarnings("null")
-        MvcResult res = mockMvc.perform(post("/api/products")
+        MvcResult res = mockMvc.perform(multipart("/api/products")
+                .param("name", name)
+                .param("description", "demo")
+                .param("category", "electronics")
+                .param("deliveryLocation", "Petah Tikva")
+                .param("startingPrice", String.valueOf(startingPrice))
+                .param("durationMinutes", String.valueOf(durationMinutes))
                 .with(authentication(sellerAuth))
-                .with(csrf())
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(body))
+                .with(csrf()))
                 .andExpect(status().isCreated())
                 .andReturn();
 
