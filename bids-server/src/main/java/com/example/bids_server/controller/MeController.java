@@ -18,6 +18,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
@@ -92,11 +94,9 @@ public class MeController {
         }
 
         @PatchMapping("/edit")
-        @Operation(summary = "Edit my profile")
-        public ResponseEntity<MeProfileResponse> editMe(@RequestBody EditProfileRequest requestBody) {
-                JsonNode node = objectMapper.valueToTree(requestBody);
-
-                MeProfile updated = meService.patchMyProfile(node);
+        @Operation(summary = "Edit my profile", requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(schema = @Schema(implementation = EditProfileRequest.class))))
+        public ResponseEntity<MeProfileResponse> editMe(@RequestBody JsonNode requestBody) {
+                MeProfile updated = meService.patchMyProfile(requestBody);
                 return ResponseEntity.ok(new MeProfileResponse(
                                 updated.id(),
                                 updated.username(),
