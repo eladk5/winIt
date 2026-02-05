@@ -6,6 +6,7 @@ import com.example.bids_server.repository.ProductSearchQuery;
 import com.example.bids_server.service.ProductsService;
 import com.example.bids_server.service.ProductsService.CreateProductRequest;
 import com.example.bids_server.service.ProductsService.CreatedProduct;
+import com.example.bids_server.service.ProductsService.UpdateProductRequest;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -117,6 +118,12 @@ public class ProductsController {
         CreatedProduct created = productsService.createProduct(req);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new CreateProductResponse(created.id(), created.endTime()));
+    }
+
+    @PatchMapping("/products/{id}")
+    public ResponseEntity<ProductDetailsResponse> updateProduct(@PathVariable long id, @ModelAttribute UpdateProductRequest req) {
+        Product updatedProduct = productsService.updateProduct(id, req);
+        return ResponseEntity.ok(ProductDetailsResponse.fromProduct(updatedProduct));
     }
 
     @GetMapping("/products/{id}")

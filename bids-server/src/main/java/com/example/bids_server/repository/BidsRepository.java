@@ -128,6 +128,13 @@ public class BidsRepository {
         jdbcTemplate.update(sql, newCurrentPrice, productId);
     }
 
+
+    public boolean hasAnyBids(long productId) {
+        String sql = "SELECT COUNT(*) FROM bids WHERE product_id = ?";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, productId);
+        return count != null && count > 0;
+    }
+
     private LockedBidState mapLockedState(ResultSet rs) throws SQLException {
 
         long pid = rs.getLong("product_id");

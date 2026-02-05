@@ -34,7 +34,7 @@ public class ProductsRepository {
      * - value => logged-in user: exclude products where seller_id = value
      * 
      * @param q               the search query options (nullable)
-     * @param excludeSellerId the seller id to exclude (nullable)  
+     * @param excludeSellerId the seller id to exclude (nullable)
      * @return list of products matching the query
      */
     public List<Product> searchProducts(ProductSearchQuery q, Long excludeSellerId) {
@@ -111,20 +111,20 @@ public class ProductsRepository {
         return jdbcTemplate.query(sql.toString(), (rs, rowNum) -> mapRowToProduct(rs), params.toArray());
     }
 
-     /**
+    /**
      * Inserts a new product row and returns the generated product id.
      *
-     * @param sellerId       the id of the seller (user)
-     * @param name           product name  
-     * @param description    product description (nullable)
-     * @param category       product category
+     * @param sellerId         the id of the seller (user)
+     * @param name             product name
+     * @param description      product description (nullable)
+     * @param category         product category
      * @param deliveryLocation delivery location
-     * @param imageUrl       product image URL (nullable)
-     * @param startTime      auction start time
-     * @param endTime        auction end time
-     * @param startingPrice  starting price
-     * @param currentPrice   current price
-     * @param leadingBidId   leading bid id (nullable)
+     * @param imageUrl         product image URL (nullable)
+     * @param startTime        auction start time
+     * @param endTime          auction end time
+     * @param startingPrice    starting price
+     * @param currentPrice     current price
+     * @param leadingBidId     leading bid id (nullable)
      * @return the generated product id
      */
     public long saveProduct(
@@ -138,8 +138,7 @@ public class ProductsRepository {
             LocalDateTime endTime,
             BigDecimal startingPrice,
             BigDecimal currentPrice,
-            Long leadingBidId
-    ) {
+            Long leadingBidId) {
         String sql = """
                 INSERT INTO products
                 (seller_id, name, description, category, delivery_location, image_url,
@@ -150,14 +149,14 @@ public class ProductsRepository {
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
         jdbcTemplate.update(connection -> {
-            PreparedStatement ps = connection.prepareStatement(sql, new String[]{"ID"});
+            PreparedStatement ps = connection.prepareStatement(sql, new String[] { "ID" });
 
             ps.setLong(1, sellerId);
             ps.setString(2, name);
-            ps.setString(3, description);           // can be null
+            ps.setString(3, description); // can be null
             ps.setString(4, category);
             ps.setString(5, deliveryLocation);
-            ps.setString(6, imageUrl);              // can be null
+            ps.setString(6, imageUrl); // can be null
 
             ps.setTimestamp(7, Timestamp.valueOf(startTime));
             ps.setTimestamp(8, Timestamp.valueOf(endTime));
@@ -197,7 +196,6 @@ public class ProductsRepository {
         }, productId);
     }
 
-
     /**
      * Returns true if there is at least one bid for the given product.
      */
@@ -208,6 +206,35 @@ public class ProductsRepository {
         return cnt != null && cnt > 0;
     }
 
+    public Product updateProduct(
+            long id,
+            String name,
+            String description,
+            String category,
+            String deliveryLocation,
+            String imageUrl,
+            BigDecimal startingPrice,
+            LocalDateTime endTime) {
+        String sql = """
+                UPDATE products
+                SET name = ?, description = ?, category = ?, delivery_location = ?, image_url = ?,
+                    starting_price = ?, current_price = ?, end_time = ?
+                WHERE id = ?
+                """;
+
+        jdbcTemplate.update(
+                sql,
+                name,
+                description,
+                category,
+                deliveryLocation,
+                imageUrl,
+                startingPrice,
+                startingPrice, // Set current_price to startingPrice during update
+                Timestamp.valueOf(endTime),
+                id);
+        return findById(id).orElseThrow(() -> new IllegalStateException("Product not found after update"));
+    }
 
     private String buildPriceCondition(String column, BigDecimal min, BigDecimal max) {
         if (min != null && max != null)

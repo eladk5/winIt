@@ -1,5 +1,6 @@
 package com.example.bids_server.service;
 
+import com.example.bids_server.repository.BidsRepository;
 import com.example.bids_server.repository.Product;
 import com.example.bids_server.repository.ProductCategory;
 import com.example.bids_server.repository.ProductSearchQuery;
@@ -12,6 +13,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class ProductsService {
@@ -19,11 +21,14 @@ public class ProductsService {
     private final ProductsRepository productsRepository;
     private final CurrentUserService currentUserService;
     private final FileStorageService fileStorageService;
+    private final BidsRepository bidsRepository;
 
-    public ProductsService(ProductsRepository productsRepository, CurrentUserService currentUserService, FileStorageService fileStorageService) {
+    public ProductsService(ProductsRepository productsRepository, CurrentUserService currentUserService,
+            FileStorageService fileStorageService, BidsRepository bidsRepository) {
         this.productsRepository = productsRepository;
         this.currentUserService = currentUserService;
         this.fileStorageService = fileStorageService;
+        this.bidsRepository = bidsRepository;
     }
 
     /**
@@ -93,6 +98,68 @@ public class ProductsService {
         return new CreatedProduct(newProductId, endTime);
     }
 
+    public Product updateProduct(long productId, UpdateProductRequest req) {
+        long currentUserId = currentUserService.requireAuthenticatedUserId();
+
+        Product existingProduct = productsRepository.findById(productId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+
+        if (existingProduct.sellerId() != currentUserId) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You do not own this product");
+        }
+
+        if (bidsRepository.hasAnyBids(productId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot edit product with active bids");
+        }
+
+        String newName = Optional.ofNullable(req.name())
+                .map(String::trim)
+                .orElse(existingProduct.name());
+        String newDescription = Optional.ofNullable(req.description())
+                .map(this::trimToNull)
+                .orElse(existingProduct.description());
+        String newCategory = Optional.ofNullable(req.category())
+                .map(ProductCategory::fromString)
+                .map(ProductCategory::apiValue)
+                .orElse(existingProduct.category());
+        String newDeliveryLocation = Optional.ofNullable(req.deliveryLocation())
+                .map(String::trim)
+                .orElse(existingProduct.deliveryLocation());
+        BigDecimal newStartingPrice = Optional.ofNullable(req.startingPrice())
+                .orElse(existingProduct.startingPrice());
+        LocalDateTime newEndTime = Optional.ofNullable(req.durationMinutes())
+                .map(duration -> existingProduct.startTime().plusMinutes(duration))
+                .orElse(existingProduct.endTime());
+
+        String newImageUrl = existingProduct.imageUrl();
+        if (req.image() != null && !req.image().isEmpty()) {
+            newImageUrl = fileStorageService.saveFile(req.image());
+        }
+
+        if (newName.isBlank())
+            throw new IllegalArgumentException("name is required");
+        if (newCategory == null)
+            throw new IllegalArgumentException("category is required");
+        if (newDeliveryLocation.isBlank())
+            throw new IllegalArgumentException("deliveryLocation is required");
+        if (newStartingPrice.compareTo(BigDecimal.ZERO) <= 0)
+            throw new IllegalArgumentException("startingPrice must be > 0");
+        if (req.durationMinutes() != null && req.durationMinutes() < 10)
+            throw new IllegalArgumentException("durationMinutes must be >= 10");
+
+        Product updatedProduct = productsRepository.updateProduct(
+                productId,
+                newName,
+                newDescription,
+                newCategory,
+                newDeliveryLocation,
+                newImageUrl,
+                newStartingPrice,
+                newEndTime);
+
+        return updatedProduct;
+    }
+
     private String trimToNull(String s) {
         if (s == null)
             return null;
@@ -101,6 +168,16 @@ public class ProductsService {
     }
 
     public record CreateProductRequest(
+            String name,
+            String description,
+            String category,
+            String deliveryLocation,
+            MultipartFile image,
+            BigDecimal startingPrice,
+            Integer durationMinutes) {
+    }
+
+    public record UpdateProductRequest(
             String name,
             String description,
             String category,
