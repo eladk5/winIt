@@ -5,6 +5,7 @@ import com.example.bids_server.repository.Product;
 import com.example.bids_server.repository.ProductCategory;
 import com.example.bids_server.repository.ProductSearchQuery;
 import com.example.bids_server.repository.ProductsRepository;
+import io.swagger.v3.oas.annotations.media.Schema;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -172,7 +173,7 @@ public class ProductsService {
             String description,
             String category,
             String deliveryLocation,
-            MultipartFile image,
+            @Schema(type = "string", format = "binary") MultipartFile image,
             BigDecimal startingPrice,
             Integer durationMinutes) {
     }
@@ -182,7 +183,7 @@ public class ProductsService {
             String description,
             String category,
             String deliveryLocation,
-            MultipartFile image,
+            @Schema(type = "string", format = "binary") MultipartFile image,
             BigDecimal startingPrice,
             Integer durationMinutes) {
     }

@@ -7,8 +7,12 @@ import org.springframework.web.bind.annotation.*;
 
 import com.example.bids_server.service.BidsService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/api")
+@Tag(name = "Bids", description = "Bidding operations")
 public class BidsController {
 
     private final BidsService bidsService;
@@ -42,6 +46,7 @@ public class BidsController {
     }
 
     @PostMapping("/bids")
+    @Operation(summary = "Place a proxy bid on a product")
     public ResponseEntity<PlaceBidResponse> placeBid(@RequestBody PlaceBidRequest req) {
 
         BidsService.PlaceBidResult result = bidsService.placeProxyBid(req.productId(), req.maxAmount());

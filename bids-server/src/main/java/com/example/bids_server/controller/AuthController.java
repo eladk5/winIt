@@ -2,6 +2,8 @@ package com.example.bids_server.controller;
 
 import com.example.bids_server.security.SessionUser;
 import com.example.bids_server.service.AuthService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotBlank;
 
 import java.util.List;
@@ -20,6 +22,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 @RestController
 @RequestMapping("/api/auth")
+@Tag(name = "Authentication", description = "User registration and login")
 public class AuthController {
 
     private final AuthService authService;
@@ -54,6 +57,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
+    @Operation(summary = "Register a new user")
     public ResponseEntity<RegisterResponse> register(@RequestBody RegisterRequest request) {
         long userId = authService.register(
                 request.username(),
@@ -70,6 +74,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    @Operation(summary = "Login user")
     public LoginResponse login(@RequestBody LoginRequest request, HttpServletRequest httpRequest) {
         long userId = authService.login(request.username(), request.password());
         SessionUser principal = new SessionUser(userId, request.username());
@@ -84,6 +89,7 @@ public class AuthController {
     }
 
     @GetMapping("/me")
+    @Operation(summary = "Get current user profile")
     public MeResponse me() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 

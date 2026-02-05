@@ -17,8 +17,12 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/api")
+@Tag(name = "Products", description = "Product catalog operations")
 public class ProductsController {
 
     private final ProductsService productsService;
@@ -28,6 +32,7 @@ public class ProductsController {
     }
 
     @GetMapping("/categories")
+    @Operation(summary = "List all product categories")
     public ResponseEntity<List<String>> listCategories() {
         List<String> categories = List.of(ProductCategory.values()).stream()
                 .map(ProductCategory::apiValue)
@@ -36,6 +41,7 @@ public class ProductsController {
     }
 
     @GetMapping("/products")
+    @Operation(summary = "Search for products")
     public ResponseEntity<List<ProductCardResponse>> listProducts(
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String search,
@@ -113,20 +119,23 @@ public class ProductsController {
         }
     }
 
-    @PostMapping("/products")
+    @PostMapping(value = "/products", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Create a new product")
     public ResponseEntity<CreateProductResponse> createProduct(@ModelAttribute CreateProductRequest req) {
         CreatedProduct created = productsService.createProduct(req);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new CreateProductResponse(created.id(), created.endTime()));
     }
 
-    @PatchMapping("/products/{id}")
+    @PatchMapping(value = "/products/{id}", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Update product details")
     public ResponseEntity<ProductDetailsResponse> updateProduct(@PathVariable long id, @ModelAttribute UpdateProductRequest req) {
         Product updatedProduct = productsService.updateProduct(id, req);
         return ResponseEntity.ok(ProductDetailsResponse.fromProduct(updatedProduct));
     }
 
     @GetMapping("/products/{id}")
+    @Operation(summary = "Get product details")
     public ResponseEntity<ProductDetailsResponse> getProductById(@PathVariable long id) {
         Product p = productsService.getProduct(id);
         return ResponseEntity.ok(ProductDetailsResponse.fromProduct(p));
