@@ -7,6 +7,7 @@ import com.example.bids_server.service.ProductsService;
 import com.example.bids_server.service.ProductsService.CreateProductRequest;
 import com.example.bids_server.service.ProductsService.CreatedProduct;
 import com.example.bids_server.service.ProductsService.UpdateProductRequest;
+import jakarta.validation.Valid;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -121,7 +122,7 @@ public class ProductsController {
 
     @PostMapping(value = "/products", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Create a new product")
-    public ResponseEntity<CreateProductResponse> createProduct(@ModelAttribute CreateProductRequest req) {
+    public ResponseEntity<CreateProductResponse> createProduct(@ModelAttribute @Valid CreateProductRequest req) {
         CreatedProduct created = productsService.createProduct(req);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new CreateProductResponse(created.id(), created.endTime()));

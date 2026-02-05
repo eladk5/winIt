@@ -4,6 +4,7 @@ import com.example.bids_server.security.SessionUser;
 import com.example.bids_server.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 
 import java.util.List;
@@ -58,7 +59,7 @@ public class AuthController {
 
     @PostMapping("/register")
     @Operation(summary = "Register a new user")
-    public ResponseEntity<RegisterResponse> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<RegisterResponse> register(@RequestBody @Valid RegisterRequest request) {
         long userId = authService.register(
                 request.username(),
                 request.password(),
@@ -75,7 +76,7 @@ public class AuthController {
 
     @PostMapping("/login")
     @Operation(summary = "Login user")
-    public LoginResponse login(@RequestBody LoginRequest request, HttpServletRequest httpRequest) {
+    public LoginResponse login(@RequestBody @Valid LoginRequest request, HttpServletRequest httpRequest) {
         long userId = authService.login(request.username(), request.password());
         SessionUser principal = new SessionUser(userId, request.username());
         Authentication auth = new UsernamePasswordAuthenticationToken(

@@ -6,6 +6,10 @@ import com.example.bids_server.repository.ProductCategory;
 import com.example.bids_server.repository.ProductSearchQuery;
 import com.example.bids_server.repository.ProductsRepository;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -58,21 +62,9 @@ public class ProductsService {
     public CreatedProduct createProduct(CreateProductRequest req) {
         long sellerId = currentUserService.requireAuthenticatedUserId();
 
-        if (req.name() == null || req.name().isBlank()) {
-            throw new IllegalArgumentException("name is required");
-        }
         ProductCategory cat = ProductCategory.fromString(req.category());
         if (cat == null) {
             throw new IllegalArgumentException("category is required");
-        }
-        if (req.deliveryLocation() == null || req.deliveryLocation().isBlank()) {
-            throw new IllegalArgumentException("deliveryLocation is required");
-        }
-        if (req.startingPrice() == null || req.startingPrice().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("startingPrice must be > 0");
-        }
-        if (req.durationMinutes() == null || req.durationMinutes() < 10) {
-            throw new IllegalArgumentException("durationMinutes must be >= 10");
         }
 
         String imageUrl = null;
@@ -169,13 +161,13 @@ public class ProductsService {
     }
 
     public record CreateProductRequest(
-            String name,
+            @NotBlank String name,
             String description,
-            String category,
-            String deliveryLocation,
+            @NotBlank String category,
+            @NotBlank String deliveryLocation,
             @Schema(type = "string", format = "binary") MultipartFile image,
-            BigDecimal startingPrice,
-            Integer durationMinutes) {
+            @NotNull @Positive BigDecimal startingPrice,
+            @NotNull @Min(10) Integer durationMinutes) {
     }
 
     public record UpdateProductRequest(
