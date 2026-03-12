@@ -4,13 +4,49 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-import { ApiError, logout } from "@/lib/api";
+import { ApiError, logout, me, MeResponse } from "@/lib/api";
 
 export function Navbar() {
     const router = useRouter();
     const pathname = usePathname();
     const userMenuRef = useRef<HTMLDivElement | null>(null);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+    const [user, setUser] = useState<MeResponse | null>(null);
+    const [isLoadingUser, setIsLoadingUser] = useState(true);
+
+    useEffect(() => {
+        let isMounted = true;
+        
+        if (!user) {
+            setIsLoadingUser(true);
+        }
+        
+        me()
+            .then((data) => {
+                if (isMounted) {
+                    if (data && data.id) {
+                        setUser(data);
+                    } else {
+                        setUser(null);
+                    }
+                }
+            })
+            .catch(() => {
+                if (isMounted) {
+                    setUser(null);
+                }
+            })
+            .finally(() => {
+                if (isMounted) {
+                    setIsLoadingUser(false);
+                }
+            });
+
+        return () => {
+            isMounted = false;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pathname]);
 
     // Close user menu on outside click
     useEffect(() => {
@@ -111,71 +147,91 @@ export function Navbar() {
                         })}
                     </div>
 
-                    {/* User menu */}
-                    <div className="relative" ref={userMenuRef}>
-                        <button
-                            aria-expanded={isUserMenuOpen}
-                            aria-haspopup="menu"
-                            aria-label="User menu"
-                            className={`flex h-10 w-10 items-center justify-center rounded-lg transition-all ${isUserMenuOpen
-                                ? "bg-primary/10 text-primary"
-                                : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700"
-                                }`}
-                            onClick={() => {
-                                setIsUserMenuOpen((previous) => !previous);
-                            }}
-                            type="button"
-                        >
-                            <span className="material-symbols-outlined text-[20px]">person</span>
-                        </button>
-                        {isUserMenuOpen && (
-                            <div className="absolute right-0 z-50 mt-2 w-48 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
-                                <div className="border-b border-slate-100 px-4 py-3">
-                                    <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Account</p>
-                                </div>
-                                <Link
-                                    className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-                                    href="/dashboard?tab=bids"
-                                    onClick={() => {
-                                        setIsUserMenuOpen(false);
-                                    }}
-                                >
-                                    <span className="material-symbols-outlined text-[16px] text-slate-400">gavel</span>
-                                    My Bids
-                                </Link>
-                                <Link
-                                    className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-                                    href="/dashboard?tab=sales"
-                                    onClick={() => {
-                                        setIsUserMenuOpen(false);
-                                    }}
-                                >
-                                    <span className="material-symbols-outlined text-[16px] text-slate-400">storefront</span>
-                                    My Sales
-                                </Link>
-                                <Link
-                                    className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-                                    href="/dashboard?tab=profile"
-                                    onClick={() => {
-                                        setIsUserMenuOpen(false);
-                                    }}
-                                >
-                                    <span className="material-symbols-outlined text-[16px] text-slate-400">person</span>
-                                    Profile
-                                </Link>
-                                <div className="border-t border-slate-100">
-                                    <button
-                                        className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
-                                        onClick={handleSignOut}
-                                        type="button"
+                    {/* User menu or Auth links */}
+                    {isLoadingUser ? (
+                        <div className="h-10 w-10 animate-pulse rounded-lg bg-slate-200"></div>
+                    ) : user ? (
+                        <div className="relative" ref={userMenuRef}>
+                            <button
+                                aria-expanded={isUserMenuOpen}
+                                aria-haspopup="menu"
+                                aria-label="User menu"
+                                className={`flex h-10 w-10 items-center justify-center rounded-lg transition-all ${isUserMenuOpen
+                                    ? "bg-primary/10 text-primary"
+                                    : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700"
+                                    }`}
+                                onClick={() => {
+                                    setIsUserMenuOpen((previous) => !previous);
+                                }}
+                                type="button"
+                            >
+                                <span className="material-symbols-outlined text-[20px]">person</span>
+                            </button>
+                            {isUserMenuOpen && (
+                                <div className="absolute right-0 z-50 mt-2 w-48 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+                                    <div className="border-b border-slate-100 px-4 py-3 bg-slate-50/50 flex flex-col gap-0.5">
+                                        <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Account</p>
+                                        <p className="text-sm font-medium text-slate-700 truncate">{user.username}</p>
+                                    </div>
+                                    <Link
+                                        className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                                        href="/dashboard?tab=bids"
+                                        onClick={() => {
+                                            setIsUserMenuOpen(false);
+                                        }}
                                     >
-                                        <span className="material-symbols-outlined text-[16px]">logout</span>
-                                        Sign out
-                                    </button>
+                                        <span className="material-symbols-outlined text-[16px] text-slate-400">gavel</span>
+                                        My Bids
+                                    </Link>
+                                    <Link
+                                        className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                                        href="/dashboard?tab=sales"
+                                        onClick={() => {
+                                            setIsUserMenuOpen(false);
+                                        }}
+                                    >
+                                        <span className="material-symbols-outlined text-[16px] text-slate-400">storefront</span>
+                                        My Sales
+                                    </Link>
+                                    <Link
+                                        className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                                        href="/dashboard?tab=profile"
+                                        onClick={() => {
+                                            setIsUserMenuOpen(false);
+                                        }}
+                                    >
+                                        <span className="material-symbols-outlined text-[16px] text-slate-400">person</span>
+                                        Profile
+                                    </Link>
+                                    <div className="border-t border-slate-100">
+                                        <button
+                                            className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
+                                            onClick={handleSignOut}
+                                            type="button"
+                                        >
+                                            <span className="material-symbols-outlined text-[16px]">logout</span>
+                                            Sign out
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                        )}
-                    </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-2">
+                            <Link
+                                className="hidden md:flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-700"
+                                href="/auth"
+                            >
+                                Sign in
+                            </Link>
+                            <Link
+                                className="flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white shadow-md shadow-primary/20 transition-all hover:bg-blue-600 hover:shadow-lg hover:shadow-primary/30 active:scale-95"
+                                href="/auth"
+                            >
+                                Get Started
+                            </Link>
+                        </div>
+                    )}
                 </div>
             </div>
         </header>
