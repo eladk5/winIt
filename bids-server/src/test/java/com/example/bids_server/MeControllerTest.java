@@ -16,7 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -40,6 +40,8 @@ public class MeControllerTest {
     AuthService authService;
     @Autowired
     ObjectMapper objectMapper;
+    @Autowired
+    JdbcTemplate jdbcTemplate;
 
     private long buyerId;
     private String buyerUsername;
@@ -178,18 +180,21 @@ public class MeControllerTest {
     @SuppressWarnings("null")
     @Test
     void meProfile_returnsPersistedProfileData() throws Exception {
-        mockMvc.perform(get("/api/me/profile")
-                .with(authentication(buyerAuth)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value(buyerUsername))
-                .andExpect(jsonPath("$.firstName").value("Buyer"))
-                .andExpect(jsonPath("$.lastName").value("Auto"))
-                .andExpect(jsonPath("$.mobilePhone").value("050-1111111"))
-                .andExpect(jsonPath("$.city").value("PT"))
-                .andExpect(jsonPath("$.street").value("Street 1"))
-                .andExpect(jsonPath("$.zipCode").value("11111"));
-    }
+        String uname = "profile_user_" + System.currentTimeMillis();
+        long uid = authService.register(uname, "pass", "F", "L", "123", "C", "S", "Z");
+        Authentication auth = authFor(uid, uname);
 
+        mockMvc.perform(get("/api/me/profile")
+                .with(authentication(auth)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value(uname))
+                .andExpect(jsonPath("$.firstName").value("F"))
+                .andExpect(jsonPath("$.lastName").value("L"))
+                .andExpect(jsonPath("$.mobilePhone").value("123"))
+                .andExpect(jsonPath("$.city").value("C"))
+                .andExpect(jsonPath("$.street").value("S"))
+                .andExpect(jsonPath("$.zipCode").value("Z"));
+    }
 
     @SuppressWarnings("null")
     @Test
@@ -236,5 +241,35 @@ public class MeControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"city\":123}"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @SuppressWarnings("null")
+    @Test
+    void productsSelling_whenAuctionFinishedWithNoBids_statusIsUnsold() throws Exception {
+        long productId = createProductAsSeller("UnsoldProduct", 60, 100);
+
+        // Manually expire the product
+        jdbcTemplate.update("UPDATE products SET end_time = DATEADD('MINUTE', -1, CURRENT_TIMESTAMP) WHERE id = ?", productId);
+
+        mockMvc.perform(get("/api/me/products-selling")
+                .with(authentication(sellerAuth)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.productId==" + productId + ")].status", hasItem("UNSOLD")));
+    }
+
+    @SuppressWarnings("null")
+    @Test
+    void productsSelling_whenAuctionFinishedWithBids_statusIsSold() throws Exception {
+        long productId = createProductAsSeller("SoldProduct", 60, 100);
+
+        placeBidAs(buyerAuth, productId, 150);
+
+        // Manually expire the product
+        jdbcTemplate.update("UPDATE products SET end_time = DATEADD('MINUTE', -1, CURRENT_TIMESTAMP) WHERE id = ?", productId);
+
+        mockMvc.perform(get("/api/me/products-selling")
+                .with(authentication(sellerAuth)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.productId==" + productId + ")].status", hasItem("SOLD")));
     }
 }

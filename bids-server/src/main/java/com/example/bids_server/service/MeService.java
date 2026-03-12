@@ -77,7 +77,8 @@ public class MeService {
 
     public enum MySellingStatus {
         ACTIVE,
-        SOLD
+        SOLD,
+        UNSOLD
     }
 
     public record MySellingProductRow(
@@ -100,7 +101,15 @@ public class MeService {
         return meRepository.findProductsSellingForUser(sellerId).stream()
                 .map(row -> {
                     boolean active = row.endTime() != null && row.endTime().isAfter(now);
-                    MySellingStatus status = active ? MySellingStatus.ACTIVE : MySellingStatus.SOLD;
+
+                    MySellingStatus status;
+                    if (active) {
+                        status = MySellingStatus.ACTIVE;
+                    } else if (row.bidCount() > 0) {
+                        status = MySellingStatus.SOLD;
+                    } else {
+                        status = MySellingStatus.UNSOLD;
+                    }
 
                     // canEdit: only if NO bids exist at all
                     boolean canEdit = row.bidCount() == 0;
