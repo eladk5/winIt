@@ -15,12 +15,6 @@ You can run the server using the Maven wrapper:
 ./mvnw spring-boot:run
 ```
 
-Or on Windows:
-
-```cmd
-.\mvnw spring-boot:run
-```
-
 The server will start on port `8080`.
 
 ## API Documentation (Swagger/OpenAPI)

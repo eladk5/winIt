@@ -36,3 +36,5 @@ data/
 
 ### VS Code ###
 .vscode/
+
+bids-server/uploads
