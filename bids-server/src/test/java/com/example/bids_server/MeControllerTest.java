@@ -175,6 +175,21 @@ public class MeControllerTest {
                 .andExpect(jsonPath("$[?(@.productId==" + productId + ")].canEdit", hasItem(false)));
     }
 
+    @SuppressWarnings("null")
+    @Test
+    void meProfile_returnsPersistedProfileData() throws Exception {
+        mockMvc.perform(get("/api/me/profile")
+                .with(authentication(buyerAuth)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value(buyerUsername))
+                .andExpect(jsonPath("$.firstName").value("Buyer"))
+                .andExpect(jsonPath("$.lastName").value("Auto"))
+                .andExpect(jsonPath("$.mobilePhone").value("050-1111111"))
+                .andExpect(jsonPath("$.city").value("PT"))
+                .andExpect(jsonPath("$.street").value("Street 1"))
+                .andExpect(jsonPath("$.zipCode").value("11111"));
+    }
+
 
     @SuppressWarnings("null")
     @Test

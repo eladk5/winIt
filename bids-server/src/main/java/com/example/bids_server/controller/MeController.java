@@ -69,6 +69,21 @@ public class MeController {
                                 .toList();
         }
 
+        @GetMapping("/profile")
+        @Operation(summary = "Get my profile")
+        public ResponseEntity<MeProfileResponse> meProfile() {
+                MeProfile profile = meService.getMyProfile();
+                return ResponseEntity.ok(new MeProfileResponse(
+                                profile.id(),
+                                profile.username(),
+                                profile.firstName(),
+                                profile.lastName(),
+                                profile.mobilePhone(),
+                                profile.city(),
+                                profile.street(),
+                                profile.zipCode()));
+        }
+
         public record MyBidHistoryItem(
                         long productId,
                         String productName,
