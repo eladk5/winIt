@@ -6,8 +6,7 @@ public enum ProductCategory {
     ELECTRONICS("Electronics"),
     FURNITURE("Furniture"),
     CLOTHING("Clothing"),
-    VEHICLES("Vehicles"),
-    CAMERAS("Cameras");
+    VEHICLES("Vehicles");
 
     private final String apiValue;
 

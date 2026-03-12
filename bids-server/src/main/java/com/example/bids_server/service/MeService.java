@@ -120,6 +120,12 @@ public class MeService {
                 .toList();
     }
 
+    public MeProfile getMyProfile() {
+        long userId = currentUserService.requireAuthenticatedUserId();
+        return meRepository.getMeProfile(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+    }
+
     /**
      * PATCH behavior:
      * - missing field => unchanged

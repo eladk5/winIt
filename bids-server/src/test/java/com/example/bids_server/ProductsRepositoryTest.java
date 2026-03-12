@@ -164,11 +164,11 @@ class ProductsRepositoryTest {
                 now.plusHours(3),
                 new BigDecimal("1200.00"));
 
-        long camera = createProduct(
+        long furniture = createProduct(
                 seller,
-                PRODUCT_PREFIX + "camera",
-                ProductCategory.CAMERAS,
-                "Vintage camera",
+                PRODUCT_PREFIX + "furniture",
+                ProductCategory.FURNITURE,
+                "Vintage chair",
                 "http://img.com/cam.jpg",
                 now.minusHours(1),
                 now.plusHours(3),
@@ -198,7 +198,7 @@ class ProductsRepositoryTest {
 
         assertEquals(1, results.size(), "Expected exactly one match (Electronics + hasImage + search)");
         assertEquals(ps5, results.get(0).id(), "Expected the PS5 product to match");
-        assertTrue(results.stream().noneMatch(p -> p.id() == camera), "Camera category should be filtered out");
+        assertTrue(results.stream().noneMatch(p -> p.id() == furniture), "Furniture category should be filtered out");
         assertTrue(results.stream().noneMatch(p -> p.id() == noImageElectronics),
                 "Electronics without image should be filtered out");
     }
