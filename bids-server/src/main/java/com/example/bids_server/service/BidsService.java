@@ -87,6 +87,12 @@ public class BidsService {
         // There is a leader
         BigDecimal currentBidMaxAmount = st.currentLeaderMaxAmount();
         long currentLeaderBidId = st.leadingBidId();
+        Long leaderUserId = st.leaderUserId();
+
+        // CASE: bidder is already the current leader
+        if (leaderUserId != null && leaderUserId == bidderId) {
+            return updateLeaderMaxAmount(productId, bidderId, bidderMaxAmount, currentPrice, currentBidMaxAmount);
+        }
 
         // CASE: bidderMaxAmount > currentBidMaxAmount => bidder becomes leader
         if (bidderMaxAmount.compareTo(currentBidMaxAmount) > 0) {
@@ -109,6 +115,25 @@ public class BidsService {
 
         // CASE: valid but outbid
         return outBid(bidderMaxAmount, productId, step, currentBidMaxAmount, currentLeaderBidId);
+    }
+
+    private PlaceBidResult updateLeaderMaxAmount(long productId, long bidderId, BigDecimal bidderMaxAmount,
+            BigDecimal currentPrice, BigDecimal currentBidMaxAmount) {
+        if (bidderMaxAmount.compareTo(currentBidMaxAmount) <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "New max bid must be higher than your current max bid");
+        }
+        // Insert a new bid with the new max amount
+        long newBidId = bidsRepository.insertBid(productId, bidderId, bidderMaxAmount);
+        // Keep the current price the same
+        bidsRepository.updateProductAfterWin(productId, currentPrice, newBidId);
+        return new PlaceBidResult(
+                BidResultStatus.WINNING,
+                productId,
+                currentPrice,
+                newBidId,
+                null,
+                "Your max bid was updated successfully");
     }
 
     private PlaceBidResult firstBid(BigDecimal currentPrice, BigDecimal bidderMaxAmount, long productId,

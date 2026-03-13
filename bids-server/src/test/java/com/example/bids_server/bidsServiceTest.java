@@ -113,12 +113,74 @@ class BidsServiceIntegrationTest {
         assertEquals(0, dbCurrentPrice(productId).compareTo(expected3));
     }
 
+    @Test
+    void leaderIncreasesMaxBid_priceStaysSame_newBidInserted() {
+        sellerId = insertUser("seller_inc");
+        buyer1Id = insertUser("buyer1_inc");
+
+        productId = insertProduct(
+                sellerId,
+                bd("100.00"),
+                bd("100.00"),
+                LocalDateTime.now().plusHours(2),
+                null);
+
+        loginAs(buyer1Id, "buyer1_inc");
+
+        // First bid
+        BigDecimal firstMax = bd("150.00");
+        BidsService.PlaceBidResult r1 = bidsService.placeProxyBid(productId, firstMax);
+        assertEquals(BidsService.BidResultStatus.WINNING, r1.status());
+        assertEquals(0, r1.newCurrentPrice().compareTo(bd("100.00")));
+
+        // Increase max bid
+        BigDecimal secondMax = bd("200.00");
+        BidsService.PlaceBidResult r2 = bidsService.placeProxyBid(productId, secondMax);
+
+        assertEquals(BidsService.BidResultStatus.WINNING, r2.status());
+        assertEquals(0, r2.newCurrentPrice().compareTo(bd("100.00"))); // Price should not change
+        assertNotEquals(r1.leadingBidId(), r2.leadingBidId()); // New bid row should be created
+        assertEquals(r2.leadingBidId(), dbLeadingBidId(productId));
+
+        assertEquals(2, countBids(productId));
+    }
+
+    @Test
+    void leaderTriesToLowerOrKeepMaxBid_throwsException() {
+        sellerId = insertUser("seller_err");
+        buyer1Id = insertUser("buyer1_err");
+
+        productId = insertProduct(
+                sellerId,
+                bd("100.00"),
+                bd("100.00"),
+                LocalDateTime.now().plusHours(2),
+                null);
+
+        loginAs(buyer1Id, "buyer1_err");
+
+        // First bid
+        BigDecimal firstMax = bd("150.00");
+        bidsService.placeProxyBid(productId, firstMax);
+
+        // Try to place same max bid
+        assertThrows(org.springframework.web.server.ResponseStatusException.class, () -> {
+            bidsService.placeProxyBid(productId, bd("150.00"));
+        });
+
+        // Try to place lower max bid
+        assertThrows(org.springframework.web.server.ResponseStatusException.class, () -> {
+            bidsService.placeProxyBid(productId, bd("140.00"));
+        });
+
+        assertEquals(1, countBids(productId));
+    }
+
     private void loginAs(long userId, String username) {
         SessionUser principal = new SessionUser(userId, username);
         var auth = new UsernamePasswordAuthenticationToken(principal, null, java.util.List.of());
         SecurityContextHolder.getContext().setAuthentication(auth);
     }
-
 
     private long insertUser(String username) {
         jdbcTemplate.update("""

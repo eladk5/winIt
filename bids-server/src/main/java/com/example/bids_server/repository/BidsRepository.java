@@ -30,9 +30,11 @@ public class BidsRepository {
             long sellerId,
             BigDecimal currentPrice,
             LocalDateTime endTime,
-            Long leadingBidId,               // nullable if no bids
-            BigDecimal currentLeaderMaxAmount // nullable if no bids
-    ) {}
+            Long leadingBidId, // nullable if no bids
+            BigDecimal currentLeaderMaxAmount, // nullable if no bids
+            Long leaderUserId // nullable if no bids
+    ) {
+    }
 
     /**
      * Locks the product row FOR UPDATE and returns the current bid-relevant state.
@@ -46,7 +48,8 @@ public class BidsRepository {
                     p.current_price   AS current_price,
                     p.end_time        AS end_time,
                     p.leading_bid_id  AS leading_bid_id,
-                    lb.max_amount     AS leader_max_amount
+                    lb.max_amount     AS leader_max_amount,
+                    lb.bidder_id      AS leader_user_id
                 FROM products p
                 LEFT JOIN bids lb
                     ON lb.id = p.leading_bid_id
@@ -128,7 +131,6 @@ public class BidsRepository {
         jdbcTemplate.update(sql, newCurrentPrice, productId);
     }
 
-
     public boolean hasAnyBids(long productId) {
         String sql = "SELECT COUNT(*) FROM bids WHERE product_id = ?";
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, productId);
@@ -149,12 +151,15 @@ public class BidsRepository {
 
         BigDecimal leaderMax = rs.getBigDecimal("leader_max_amount");
 
+        Long leaderUserId = (Long) rs.getObject("leader_user_id");
+
         return new LockedBidState(
                 pid,
                 sellerId,
                 currentPrice,
                 endTime,
                 leadingBidId,
-                leaderMax);
+                leaderMax,
+                leaderUserId);
     }
 }
