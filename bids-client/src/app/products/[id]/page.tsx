@@ -1,4 +1,4 @@
-﻿/* eslint-disable @next/next/no-img-element */
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import Link from "next/link";
@@ -7,17 +7,40 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import {
   ApiError,
+  bidsHistory,
   getProductById,
   placeBid,
+  type MyBidHistoryItem,
   type PlaceBidResponse,
   type ProductDetailsResponse,
 } from "@/lib/api";
-import { formatCurrency, formatDateTime, formatTimeLeft, resolveImageUrl } from "@/lib/format";
+import { formatCurrency, formatDateTime, formatTimeLeft, resolveImageUrl, statusTone } from "@/lib/format";
+import { showBidStatusModal } from "@/lib/swal";
 
 type BidFeedback = {
   tone: "green" | "red" | "amber";
   text: string;
 };
+
+type MyBidStatus = "WINNING" | "OUTBID" | "WON" | "LOST";
+
+function bidStatusClasses(status: MyBidStatus): string {
+  const tone = statusTone(status);
+
+  if (tone === "green") {
+    return "border-emerald-200 bg-emerald-50 text-emerald-700";
+  }
+
+  if (tone === "red") {
+    return "border-red-200 bg-red-50 text-red-700";
+  }
+
+  if (tone === "amber") {
+    return "border-amber-200 bg-amber-50 text-amber-700";
+  }
+
+  return "border-slate-200 bg-slate-50 text-slate-700";
+}
 
 export default function ProductDetailsPage() {
   const params = useParams<{ id: string }>();
@@ -32,6 +55,7 @@ export default function ProductDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [nowMs, setNowMs] = useState(() => Date.now());
+  const [myBidEntry, setMyBidEntry] = useState<MyBidHistoryItem | null>(null);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -85,8 +109,51 @@ export default function ProductDetailsPage() {
     };
   }, [productId]);
 
+  useEffect(() => {
+    if (!Number.isFinite(productId)) {
+      setMyBidEntry(null);
+      return;
+    }
+
+    let isMounted = true;
+
+    bidsHistory()
+      .then((items) => {
+        if (!isMounted) {
+          return;
+        }
+
+        const item = items.find((entry) => entry.productId === productId) ?? null;
+        setMyBidEntry(item);
+      })
+      .catch((error) => {
+        if (!isMounted) {
+          return;
+        }
+
+        if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+          setMyBidEntry(null);
+          return;
+        }
+
+        setMyBidEntry(null);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [productId]);
+
   const timeLeft = product ? formatTimeLeft(product.endTime, nowMs) : "N/A";
   const isAuctionEnded = timeLeft === "Ended";
+  const normalizedMyBidStatus =
+    myBidEntry &&
+    (myBidEntry.status.toUpperCase() === "WINNING" ||
+      myBidEntry.status.toUpperCase() === "OUTBID" ||
+      myBidEntry.status.toUpperCase() === "WON" ||
+      myBidEntry.status.toUpperCase() === "LOST")
+      ? (myBidEntry.status.toUpperCase() as MyBidStatus)
+      : null;
 
   const minimumBid = useMemo(() => {
     if (!Number.isFinite(currentPrice)) {
@@ -126,6 +193,41 @@ export default function ProductDetailsPage() {
 
       setCurrentPrice(response.currentPrice);
       setFeedback(parseBidFeedback(response));
+      const normalizedStatus = response.status.toUpperCase();
+
+      if (
+        normalizedStatus === "WINNING" ||
+        normalizedStatus === "OUTBID" ||
+        normalizedStatus === "WON" ||
+        normalizedStatus === "LOST"
+      ) {
+        setMyBidEntry((previous) => ({
+          productId: product.id,
+          productName: product.name,
+          myMaxBid: numericBid,
+          currentPrice: response.currentPrice,
+          endTime: product.endTime,
+          deliveryLocation: product.deliveryLocation,
+          imageUrl: product.imageUrl,
+          status: normalizedStatus,
+          ...previous,
+          myMaxBid: numericBid,
+          currentPrice: response.currentPrice,
+          status: normalizedStatus,
+        }));
+      }
+
+      const isSuccessStatus = normalizedStatus === "WINNING" || normalizedStatus === "OUTBID";
+
+      if (isSuccessStatus) {
+        void showBidStatusModal({
+          isWinning: normalizedStatus === "WINNING",
+          currentPrice: response.currentPrice,
+          onLearnMore: () => {
+            router.push("/help");
+          },
+        });
+      }
 
       if (response.minRequiredMax !== null && response.status.toUpperCase() === "REJECT_TOO_LOW") {
         setBidAmount(String(response.minRequiredMax));
@@ -223,10 +325,10 @@ export default function ProductDetailsPage() {
               {feedback && (
                 <div
                   className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-bold ${feedback.tone === "green"
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                      : feedback.tone === "red"
-                        ? "border-red-200 bg-red-50 text-red-700"
-                        : "border-amber-200 bg-amber-50 text-amber-700"
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                    : feedback.tone === "red"
+                      ? "border-red-200 bg-red-50 text-red-700"
+                      : "border-amber-200 bg-amber-50 text-amber-700"
                     }`}
                 >
                   <span className="material-symbols-outlined text-xl">
@@ -238,6 +340,24 @@ export default function ProductDetailsPage() {
 
               <div className="rounded-2xl border border-slate-200 bg-white shadow-xl">
                 <div className="p-8">
+                  {normalizedMyBidStatus && (
+                    <div className={`mb-5 rounded-2xl border px-4 py-3 ${bidStatusClasses(normalizedMyBidStatus)}`}>
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-[11px] font-black uppercase tracking-[0.18em] opacity-70">Your Bid Status</p>
+                          <p className="mt-1 text-lg font-black">{normalizedMyBidStatus}</p>
+                        </div>
+                        <span className="material-symbols-outlined text-[24px]">
+                          {normalizedMyBidStatus === "WINNING" || normalizedMyBidStatus === "WON" ? "emoji_events" : "priority_high"}
+                        </span>
+                      </div>
+                      <div className="mt-3 flex items-center justify-between gap-3 border-t border-current/10 pt-3 text-sm">
+                        <span className="opacity-70">Your max bid</span>
+                        <span className="font-bold">{formatCurrency(myBidEntry.myMaxBid)}</span>
+                      </div>
+                    </div>
+                  )}
+
                   <p className="mb-1 text-sm font-medium text-slate-500">Current Price</p>
                   <h3 className="text-5xl font-black tracking-tight text-slate-900">{formatCurrency(currentPrice)}</h3>
 

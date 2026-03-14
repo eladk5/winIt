@@ -1,4 +1,4 @@
-﻿const CONFIGURED_API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "").replace(/\/+$/, "");
+const CONFIGURED_API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "").replace(/\/+$/, "");
 
 function resolveRuntimeApiBaseUrl(): string {
   if (!CONFIGURED_API_BASE_URL) {
@@ -88,6 +88,15 @@ export type ProductDetailsResponse = {
   startingPrice: number;
   currentPrice: number;
   leadingBidId: number | null;
+};
+
+export type SellerContactResponse = {
+  firstName: string;
+  lastName: string;
+  mobilePhone: string;
+  city: string | null;
+  street: string | null;
+  zipCode: string | null;
 };
 
 export type PlaceBidRequest = {
@@ -330,6 +339,10 @@ export function listProducts(query: ListProductsQuery = {}): Promise<ProductCard
 
 export function getProductById(id: number): Promise<ProductDetailsResponse> {
   return request<ProductDetailsResponse>(`/api/products/${id}`);
+}
+
+export function getSellerContact(id: number): Promise<SellerContactResponse> {
+  return request<SellerContactResponse>(`/api/products/${id}/seller-contact`);
 }
 
 export function createProduct(payload: CreateProductRequest): Promise<CreateProductResponse> {
