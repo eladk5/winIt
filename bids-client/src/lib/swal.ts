@@ -2,6 +2,7 @@ import Swal from "sweetalert2";
 
 type BidStatusModalOptions = {
   isWinning: boolean;
+  isUpdateOnly?: boolean;
   currentPrice?: number;
   onLearnMore?: () => void;
 };
@@ -16,14 +17,21 @@ function formatPriceSnapshot(currentPrice?: number): string {
 
 export function showBidStatusModal({
   isWinning,
+  isUpdateOnly,
   currentPrice,
   onLearnMore,
 }: BidStatusModalOptions): Promise<void> {
-  const accentLabel = isWinning ? "Leading" : "Watchlist";
-  const accentText = isWinning ? "You are currently the highest bidder." : "Your bid was recorded, but someone is ahead.";
+  const accentLabel = isUpdateOnly ? "Max Bid Updated" : isWinning ? "Leading" : "Watchlist";
+  const accentText = isUpdateOnly
+    ? "Your maximum bid has been increased without raising the current price."
+    : isWinning
+      ? "You are currently the highest bidder."
+      : "Your bid was recorded, but someone is ahead.";
+
+  const title = isUpdateOnly ? "Max Bid Increased" : isWinning ? "You are leading" : "You were outbid";
 
   return Swal.fire({
-    title: isWinning ? "You are leading" : "You were outbid",
+    title,
     html: `
       <div class="swal-theme-card">
         <div class="swal-theme-badge">${accentLabel}</div>
@@ -38,14 +46,14 @@ export function showBidStatusModal({
         </p>
       </div>
     `,
-    iconHtml: `<span class="material-symbols-outlined swal-theme-icon-glyph">${isWinning ? "gavel" : "trending_up"}</span>`,
+    iconHtml: `<span class="material-symbols-outlined swal-theme-icon-glyph">${isUpdateOnly || isWinning ? "gavel" : "trending_up"}</span>`,
     showCancelButton: true,
-    confirmButtonText: isWinning ? "Keep Browsing" : "Try Another Bid",
+    confirmButtonText: isWinning || isUpdateOnly ? "Keep Browsing" : "Try Another Bid",
     cancelButtonText: "How Bidding Works",
     customClass: {
       container: "swal-theme-container",
       popup: "swal-theme-popup",
-      icon: `swal-theme-icon ${isWinning ? "swal-theme-icon-winning" : "swal-theme-icon-outbid"}`,
+      icon: `swal-theme-icon ${isWinning || isUpdateOnly ? "swal-theme-icon-winning" : "swal-theme-icon-outbid"}`,
       title: "swal-theme-title",
       htmlContainer: "swal-theme-html",
       actions: "swal-theme-actions",

@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   ApiError,
@@ -50,6 +50,7 @@ function parseBidFeedback(
   status: string,
   message: string,
   minRequiredMax: number | null,
+  currentMax?: number,
 ): { tone: QuickBidTone; text: string } {
   const normalized = status.toUpperCase();
 
@@ -62,6 +63,13 @@ function parseBidFeedback(
   }
 
   if (normalized === "REJECT_TOO_LOW") {
+    if (currentMax !== undefined && currentMax > 0) {
+      return {
+        tone: "amber",
+        text: `New max bid must be higher than your current max bid\nyour max bid: ${formatCurrency(currentMax)}`,
+      };
+    }
+
     const closestAllowedText =
       minRequiredMax !== null ? `Closest allowed bid: ${formatCurrency(minRequiredMax)}` : "Bid is too low.";
     return {
@@ -87,13 +95,13 @@ function bidStatusTone(status: MyBidStatus): string {
 
 function ProductCard({
   product,
-  myBidStatus,
+  myBidEntry,
   onBidStatusChange,
   nowMs,
 }: {
   product: ProductCardResponse;
-  myBidStatus?: MyBidStatus;
-  onBidStatusChange: (productId: number, status: MyBidStatus) => void;
+  myBidEntry?: MyBidHistoryItem;
+  onBidStatusChange: (productId: number, item: MyBidHistoryItem) => void;
   nowMs: number;
 }) {
   const router = useRouter();
@@ -137,18 +145,28 @@ function ProductCard({
 
       setCurrentPrice(response.currentPrice);
       setBidAmount("");
-      setQuickBidMessage(parseBidFeedback(response.status, response.message, response.minRequiredMax));
+      setQuickBidMessage(parseBidFeedback(response.status, response.message, response.minRequiredMax, myBidEntry?.myMaxBid));
       if (response.status.toUpperCase() === "REJECT_TOO_LOW" && response.minRequiredMax !== null) {
         setBidAmount(String(response.minRequiredMax));
       }
       const normalized = response.status.toUpperCase();
       if (normalized === "WINNING" || normalized === "OUTBID" || normalized === "WON" || normalized === "LOST") {
-        onBidStatusChange(product.id, normalized as MyBidStatus);
+        onBidStatusChange(product.id, {
+          productId: product.id,
+          productName: product.name,
+          myMaxBid: numericBid,
+          currentPrice: response.currentPrice,
+          endTime: product.endTime,
+          deliveryLocation: product.deliveryLocation,
+          imageUrl: product.imageUrl,
+          status: normalized,
+        });
       }
 
       if (normalized === "WINNING" || normalized === "OUTBID") {
         void showBidStatusModal({
           isWinning: normalized === "WINNING",
+          isUpdateOnly: normalized === "WINNING" && myBidEntry?.status.toUpperCase() === "WINNING",
           currentPrice: response.currentPrice,
           onLearnMore: () => {
             router.push("/help");
@@ -161,9 +179,14 @@ function ProductCard({
         return;
       }
 
+      let message = error instanceof ApiError ? error.message : "Unable to place bid.";
+      if (message.includes("New max bid must be higher") && myBidEntry?.myMaxBid) {
+        message = `New max bid must be higher than your current max bid\nyour max bid: ${formatCurrency(myBidEntry.myMaxBid)}`;
+      }
+
       setQuickBidMessage({
         tone: "red",
-        text: error instanceof ApiError ? error.message : "Unable to place bid.",
+        text: message,
       });
     } finally {
       setIsSubmittingBid(false);
@@ -178,10 +201,10 @@ function ProductCard({
 
       <div className="flex flex-1 flex-col p-4">
         <h3 className="truncate text-base font-semibold text-slate-900">{product.name}</h3>
-        {myBidStatus && (
-          <div className="mt-2">
-            <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold uppercase ${bidStatusTone(myBidStatus)}`}>
-              Your Bid: {myBidStatus}
+        {myBidEntry && (
+          <div className="mt-2 text-right">
+            <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold uppercase ${bidStatusTone(myBidEntry.status.toUpperCase() as MyBidStatus)}`}>
+              Your Bid: {myBidEntry.status.toUpperCase()}
             </span>
           </div>
         )}
@@ -235,7 +258,7 @@ function ProductCard({
 
         {quickBidMessage && (
           <div
-            className={`mt-2.5 flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium ${quickBidMessage.tone === "green"
+            className={`mt-2.5 flex items-start gap-1.5 rounded-lg px-3 py-2 text-xs font-medium whitespace-pre-line ${quickBidMessage.tone === "green"
               ? "bg-emerald-50 text-emerald-600"
               : quickBidMessage.tone === "amber"
                 ? "bg-amber-50 text-amber-600"
@@ -260,7 +283,8 @@ export default function CatalogPage() {
   const [selectedSort, setSelectedSort] = useState<(typeof sortOptions)[number]>(sortOptions[0]);
   const [selectedMinPrice, setSelectedMinPrice] = useState<number>(PRICE_MIN_BOUND);
   const [selectedMaxPrice, setSelectedMaxPrice] = useState<number>(PRICE_MAX_BOUND);
-  const currentMaxBound = PRICE_MAX_BOUND;
+  const [currentMaxBound, setCurrentMaxBound] = useState<number>(PRICE_MAX_BOUND);
+  const currentMaxBoundRef = useRef<number>(PRICE_MAX_BOUND);
 
   const [sliderMinPrice, setSliderMinPrice] = useState<number>(PRICE_MIN_BOUND);
   const [sliderMaxPrice, setSliderMaxPrice] = useState<number>(PRICE_MAX_BOUND);
@@ -268,7 +292,7 @@ export default function CatalogPage() {
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [myBidStatuses, setMyBidStatuses] = useState<Record<number, MyBidStatus>>({});
+  const [myBidStatuses, setMyBidStatuses] = useState<Record<number, MyBidHistoryItem>>({});
   const [nowMs, setNowMs] = useState(() => Date.now());
 
   useEffect(() => {
@@ -310,12 +334,9 @@ export default function CatalogPage() {
           return;
         }
 
-        const map: Record<number, MyBidStatus> = {};
+        const map: Record<number, MyBidHistoryItem> = {};
         for (const item of items) {
-          const status = item.status.toUpperCase();
-          if (status === "WINNING" || status === "OUTBID" || status === "WON" || status === "LOST") {
-            map[item.productId] = status;
-          }
+          map[item.productId] = item;
         }
         setMyBidStatuses(map);
       })
@@ -337,10 +358,10 @@ export default function CatalogPage() {
     };
   }, []);
 
-  function handleBidStatusChange(productId: number, status: MyBidStatus) {
+  function handleBidStatusChange(productId: number, item: MyBidHistoryItem) {
     setMyBidStatuses((previous) => ({
       ...previous,
-      [productId]: status,
+      [productId]: item,
     }));
   }
 
@@ -366,7 +387,7 @@ export default function CatalogPage() {
           category: selectedCategory || undefined,
           search: search || undefined,
           minPrice: selectedMinPrice > PRICE_MIN_BOUND ? selectedMinPrice : undefined,
-          maxPrice: selectedMaxPrice < PRICE_MAX_BOUND ? selectedMaxPrice : undefined,
+          maxPrice: selectedMaxPrice < currentMaxBoundRef.current ? selectedMaxPrice : undefined,
           sortBy: selectedSort.sortBy,
           sortDir: selectedSort.sortDir,
         });
@@ -393,6 +414,45 @@ export default function CatalogPage() {
       isMounted = false;
     };
   }, [search, selectedCategory, selectedMaxPrice, selectedMinPrice, selectedSort]);
+
+  // Effect to determine the absolute maximum price bound for the current category/search
+  useEffect(() => {
+    let isMounted = true;
+
+    async function updateMaxBound() {
+      try {
+        const items = await listProducts({
+          category: selectedCategory || undefined,
+          search: search || undefined,
+          // No price filters here!
+        });
+
+        if (isMounted) {
+          const maxP = items.length > 0 ? Math.max(...items.map((p) => p.currentPrice)) : 0;
+          const newMax = Math.max(PRICE_MAX_BOUND, maxP);
+
+          setCurrentMaxBound((previousMaxBound) => {
+            if (newMax === previousMaxBound) {
+              return previousMaxBound;
+            }
+            currentMaxBoundRef.current = newMax;
+            setSliderMaxPrice((previousSliderMaxPrice) =>
+              previousSliderMaxPrice >= previousMaxBound - 1 ? newMax : previousSliderMaxPrice,
+            );
+            return newMax;
+          });
+        }
+      } catch {
+        // Ignore errors for max bound discovery
+      }
+    }
+
+    updateMaxBound();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [search, selectedCategory]);
 
   // Debounce price slider changes so we don't fire an API call on every drag tick
   useEffect(() => {
@@ -655,7 +715,7 @@ export default function CatalogPage() {
               {products.map((product) => (
                 <ProductCard
                   key={product.id}
-                  myBidStatus={myBidStatuses[product.id]}
+                  myBidEntry={myBidStatuses[product.id]}
                   nowMs={nowMs}
                   onBidStatusChange={handleBidStatusChange}
                   product={product}

@@ -192,7 +192,7 @@ export default function ProductDetailsPage() {
       });
 
       setCurrentPrice(response.currentPrice);
-      setFeedback(parseBidFeedback(response));
+      setFeedback(parseBidFeedback(response, myBidEntry?.myMaxBid));
       const normalizedStatus = response.status.toUpperCase();
 
       if (
@@ -202,6 +202,7 @@ export default function ProductDetailsPage() {
         normalizedStatus === "LOST"
       ) {
         setMyBidEntry((previous) => ({
+          ...(previous || {}),
           productId: product.id,
           productName: product.name,
           myMaxBid: numericBid,
@@ -209,10 +210,6 @@ export default function ProductDetailsPage() {
           endTime: product.endTime,
           deliveryLocation: product.deliveryLocation,
           imageUrl: product.imageUrl,
-          status: normalizedStatus,
-          ...previous,
-          myMaxBid: numericBid,
-          currentPrice: response.currentPrice,
           status: normalizedStatus,
         }));
       }
@@ -222,6 +219,7 @@ export default function ProductDetailsPage() {
       if (isSuccessStatus) {
         void showBidStatusModal({
           isWinning: normalizedStatus === "WINNING",
+          isUpdateOnly: normalizedStatus === "WINNING" && normalizedMyBidStatus === "WINNING",
           currentPrice: response.currentPrice,
           onLearnMore: () => {
             router.push("/help");
@@ -240,7 +238,18 @@ export default function ProductDetailsPage() {
         return;
       }
 
-      setApiError(error instanceof ApiError ? error.message : "Unable to place bid right now.");
+      let message = error instanceof ApiError ? error.message : "Unable to place bid right now.";
+      let tone: "red" | "amber" = "red";
+
+      if (message.includes("New max bid must be higher") && myBidEntry?.myMaxBid) {
+        message = `New max bid must be higher than your current max bid\nyour max bid: ${formatCurrency(myBidEntry.myMaxBid)}`;
+        tone = "amber";
+      }
+
+      setFeedback({
+        tone,
+        text: message,
+      });
     } finally {
       setSubmitting(false);
     }
@@ -324,7 +333,7 @@ export default function ProductDetailsPage() {
             <div className="sticky top-24 space-y-4">
               {feedback && (
                 <div
-                  className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-bold ${feedback.tone === "green"
+                  className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-sm font-bold whitespace-pre-line ${feedback.tone === "green"
                     ? "border-emerald-200 bg-emerald-50 text-emerald-700"
                     : feedback.tone === "red"
                       ? "border-red-200 bg-red-50 text-red-700"
@@ -340,7 +349,7 @@ export default function ProductDetailsPage() {
 
               <div className="rounded-2xl border border-slate-200 bg-white shadow-xl">
                 <div className="p-8">
-                  {normalizedMyBidStatus && (
+                  {myBidEntry && normalizedMyBidStatus && (
                     <div className={`mb-5 rounded-2xl border px-4 py-3 ${bidStatusClasses(normalizedMyBidStatus)}`}>
                       <div className="flex items-center justify-between gap-3">
                         <div>
@@ -409,7 +418,7 @@ export default function ProductDetailsPage() {
   );
 }
 
-function parseBidFeedback(response: PlaceBidResponse): BidFeedback {
+function parseBidFeedback(response: PlaceBidResponse, currentMax?: number): BidFeedback {
   const status = response.status.toUpperCase();
 
   if (status === "WINNING") {
@@ -427,10 +436,18 @@ function parseBidFeedback(response: PlaceBidResponse): BidFeedback {
   }
 
   if (status === "REJECT_TOO_LOW") {
-    const closestAllowedText =
+    if (currentMax !== undefined && currentMax > 0) {
+      return {
+        tone: "amber",
+        text: `New max bid must be higher than your current max bid\nyour max bid: ${formatCurrency(currentMax)}`,
+      };
+    }
+
+    let closestAllowedText =
       response.minRequiredMax !== null
         ? `Closest allowed bid: ${formatCurrency(response.minRequiredMax)}`
         : "Bid is too low.";
+
     return {
       tone: "amber",
       text: response.message ? `${response.message} ${closestAllowedText}` : closestAllowedText,
