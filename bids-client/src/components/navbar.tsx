@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { ApiError, logout, me, MeResponse } from "@/lib/api";
+import { Brand } from "@/components/brand";
 
 export function Navbar() {
     const router = useRouter();
@@ -84,7 +85,7 @@ export function Navbar() {
         router.push("/auth");
     }
 
-    // Don't render navbar on auth page
+    // Keep the auth page clean and focused on signing in.
     if (pathname.startsWith("/auth")) {
         return null;
     }
@@ -92,17 +93,14 @@ export function Navbar() {
     const navLinks = [
         { href: "/", label: "Browse", icon: "storefront", match: (p: string) => p === "/" },
         { href: "/sell", label: "Sell", icon: "add_circle", match: (p: string) => p === "/sell" },
+        { href: "/help", label: "Help", icon: "help", match: (p: string) => p === "/help" },
     ];
 
     return (
         <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/80 px-4 py-0 backdrop-blur-md lg:px-10">
             <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4">
-                {/* Logo */}
-                <Link className="flex items-center gap-2.5 text-primary" href="/">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-blue-600 shadow-md shadow-primary/20">
-                        <span className="material-symbols-outlined text-lg text-white">gavel</span>
-                    </div>
-                    <h2 className="text-lg font-bold tracking-tight text-slate-900">AuctionApp</h2>
+                <Link className="flex items-center text-primary" href="/">
+                    <Brand compact className="gap-2" taglineClassName="hidden sm:block" wordmarkClassName="tracking-tight" />
                 </Link>
 
                 {/* Navigation links */}
@@ -226,7 +224,7 @@ export function Navbar() {
                             </Link>
                             <Link
                                 className="flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white shadow-md shadow-primary/20 transition-all hover:bg-blue-600 hover:shadow-lg hover:shadow-primary/30 active:scale-95"
-                                href="/auth"
+                                href="/auth?mode=register"
                             >
                                 Get Started
                             </Link>

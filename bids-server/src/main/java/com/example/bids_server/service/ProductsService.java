@@ -27,13 +27,16 @@ public class ProductsService {
     private final CurrentUserService currentUserService;
     private final FileStorageService fileStorageService;
     private final BidsRepository bidsRepository;
+    private final com.example.bids_server.repository.MeRepository meRepository;
 
     public ProductsService(ProductsRepository productsRepository, CurrentUserService currentUserService,
-            FileStorageService fileStorageService, BidsRepository bidsRepository) {
+            FileStorageService fileStorageService, BidsRepository bidsRepository,
+            com.example.bids_server.repository.MeRepository meRepository) {
         this.productsRepository = productsRepository;
         this.currentUserService = currentUserService;
         this.fileStorageService = fileStorageService;
         this.bidsRepository = bidsRepository;
+        this.meRepository = meRepository;
     }
 
     /**
@@ -190,4 +193,36 @@ public class ProductsService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
     }
 
+    public com.example.bids_server.controller.ProductsController.SellerContactResponse getSellerContact(long productId) {
+        long currentUserId = currentUserService.requireAuthenticatedUserId();
+
+        Product product = getProduct(productId);
+
+        if (product.endTime().isAfter(LocalDateTime.now())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Auction has not ended yet");
+        }
+
+        if (product.leadingBidId() == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No winning bid for this product");
+        }
+
+        long winningBidderId = bidsRepository.getBidderId(product.leadingBidId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Winning bid not found"));
+
+        if (winningBidderId != currentUserId) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not the winning bidder");
+        }
+
+        com.example.bids_server.repository.MeRepository.MeProfile sellerProfile = meRepository.getMeProfile(product.sellerId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Seller not found"));
+
+        return new com.example.bids_server.controller.ProductsController.SellerContactResponse(
+                sellerProfile.firstName(),
+                sellerProfile.lastName(),
+                sellerProfile.mobilePhone(),
+                sellerProfile.city(),
+                sellerProfile.street(),
+                sellerProfile.zipCode()
+        );
+    }
 }

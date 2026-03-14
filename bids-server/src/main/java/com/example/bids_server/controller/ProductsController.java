@@ -142,6 +142,13 @@ public class ProductsController {
         return ResponseEntity.ok(ProductDetailsResponse.fromProduct(p));
     }
 
+    @GetMapping("/products/{id}/seller-contact")
+    @Operation(summary = "Get seller contact for a won product")
+    public ResponseEntity<SellerContactResponse> getSellerContact(@PathVariable long id) {
+        SellerContactResponse response = productsService.getSellerContact(id);
+        return ResponseEntity.ok(response);
+    }
+
     public record CreateProductResponse(
             long id,
             LocalDateTime endTime) {
@@ -174,4 +181,13 @@ public class ProductsController {
                     p.leadingBidId());
         }
     }
+
+    public record SellerContactResponse(
+            String firstName,
+            String lastName,
+            String mobilePhone,
+            String city,
+            String street,
+            String zipCode
+    ) {}
 }

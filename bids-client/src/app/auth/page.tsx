@@ -1,10 +1,11 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 import { ApiError, login, me, register } from "@/lib/api";
+import { Brand } from "@/components/brand";
 
 type AuthMode = "login" | "register";
 
@@ -38,10 +39,20 @@ function sanitizeRedirectPath(candidate: string | null): string {
 
 export default function AuthPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const redirectTarget = sanitizeRedirectPath(searchParams.get("redirect"));
+  const [redirectTarget] = useState(() => {
+    if (typeof window === "undefined") {
+      return "/dashboard";
+    }
 
-  const [mode, setMode] = useState<AuthMode>("login");
+    return sanitizeRedirectPath(new URLSearchParams(window.location.search).get("redirect"));
+  });
+  const [mode, setMode] = useState<AuthMode>(() => {
+    if (typeof window === "undefined") {
+      return "login";
+    }
+
+    return new URLSearchParams(window.location.search).get("mode") === "register" ? "register" : "login";
+  });
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -128,9 +139,8 @@ export default function AuthPage() {
     <div className="min-h-screen bg-background-light p-4 text-slate-900">
       <div className="mb-8">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-start">
-          <Link className="flex items-center gap-2 text-primary" href="/">
-            <span className="material-symbols-outlined text-3xl font-bold">gavel</span>
-            <h1 className="text-xl font-bold tracking-tight text-slate-900">AuctionApp</h1>
+          <Link className="flex items-center text-primary" href="/">
+            <Brand className="gap-3" wordmarkClassName="tracking-tight" />
           </Link>
         </div>
       </div>

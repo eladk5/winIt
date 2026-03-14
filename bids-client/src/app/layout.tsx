@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 
 import "./globals.css";
+import "sweetalert2/dist/sweetalert2.min.css";
 import { Navbar } from "@/components/navbar";
 
 const inter = Inter({
@@ -11,8 +12,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "AuctionApp",
-  description: "Auction marketplace client",
+  title: "WinIt",
+  description: "WinIt Auction & Win App",
 };
 
 export default function RootLayout({

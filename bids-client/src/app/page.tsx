@@ -1,4 +1,4 @@
-﻿/* eslint-disable @next/next/no-img-element */
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import Link from "next/link";
@@ -15,22 +15,18 @@ import {
   type ProductCardResponse,
 } from "@/lib/api";
 import { formatCurrency, formatTimeLeft, resolveImageUrl } from "@/lib/format";
+import { showBidStatusModal } from "@/lib/swal";
 
 const sortOptions = [
   { label: "Ending Soon", sortBy: "END_TIME", sortDir: "ASC" },
   { label: "Lowest Price", sortBy: "CURRENT_PRICE", sortDir: "ASC" },
   { label: "Highest Price", sortBy: "CURRENT_PRICE", sortDir: "DESC" },
 ] as const;
-const priceStepOptions = [0, 100, 250, 500, 1000, 2000, 3000, 5000, 7500, 10000] as const;
 
 type QuickBidTone = "green" | "red" | "amber";
 type MyBidStatus = "WINNING" | "OUTBID" | "WON" | "LOST";
 const PRICE_MIN_BOUND = 0;
 const PRICE_MAX_BOUND = 10000;
-
-function clampPrice(value: number): number {
-  return Math.max(PRICE_MIN_BOUND, Math.min(PRICE_MAX_BOUND, value));
-}
 
 function categoryLabel(category: string): string {
   return category
@@ -149,6 +145,16 @@ function ProductCard({
       if (normalized === "WINNING" || normalized === "OUTBID" || normalized === "WON" || normalized === "LOST") {
         onBidStatusChange(product.id, normalized as MyBidStatus);
       }
+
+      if (normalized === "WINNING" || normalized === "OUTBID") {
+        void showBidStatusModal({
+          isWinning: normalized === "WINNING",
+          currentPrice: response.currentPrice,
+          onLearnMore: () => {
+            router.push("/help");
+          },
+        });
+      }
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
         router.push(`/auth?redirect=${encodeURIComponent(`/products/${product.id}`)}`);
@@ -254,6 +260,8 @@ export default function CatalogPage() {
   const [selectedSort, setSelectedSort] = useState<(typeof sortOptions)[number]>(sortOptions[0]);
   const [selectedMinPrice, setSelectedMinPrice] = useState<number>(PRICE_MIN_BOUND);
   const [selectedMaxPrice, setSelectedMaxPrice] = useState<number>(PRICE_MAX_BOUND);
+  const currentMaxBound = PRICE_MAX_BOUND;
+
   const [sliderMinPrice, setSliderMinPrice] = useState<number>(PRICE_MIN_BOUND);
   const [sliderMaxPrice, setSliderMaxPrice] = useState<number>(PRICE_MAX_BOUND);
   const [searchInput, setSearchInput] = useState("");
@@ -399,8 +407,8 @@ export default function CatalogPage() {
   }, [sliderMinPrice, sliderMaxPrice]);
 
   const selectedCategoryLabel = selectedCategory ? categoryLabel(selectedCategory) : "All Categories";
-  const minThumbPercent = ((sliderMinPrice - PRICE_MIN_BOUND) / (PRICE_MAX_BOUND - PRICE_MIN_BOUND)) * 100;
-  const maxThumbPercent = ((sliderMaxPrice - PRICE_MIN_BOUND) / (PRICE_MAX_BOUND - PRICE_MIN_BOUND)) * 100;
+  const minThumbPercent = ((sliderMinPrice - PRICE_MIN_BOUND) / (currentMaxBound - PRICE_MIN_BOUND)) * 100;
+  const maxThumbPercent = ((sliderMaxPrice - PRICE_MIN_BOUND) / (currentMaxBound - PRICE_MIN_BOUND)) * 100;
 
   return (
     <div className="relative flex min-h-screen flex-col bg-background-light font-display text-slate-900">
@@ -510,7 +518,7 @@ export default function CatalogPage() {
                   {/* Min range input */}
                   <input
                     className="price-range-input"
-                    max={PRICE_MAX_BOUND}
+                    max={currentMaxBound}
                     min={PRICE_MIN_BOUND}
                     onChange={(event) => {
                       const val = Number(event.target.value);
@@ -523,7 +531,7 @@ export default function CatalogPage() {
                   {/* Max range input */}
                   <input
                     className="price-range-input"
-                    max={PRICE_MAX_BOUND}
+                    max={currentMaxBound}
                     min={PRICE_MIN_BOUND}
                     onChange={(event) => {
                       const val = Number(event.target.value);

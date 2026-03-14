@@ -157,4 +157,14 @@ public class BidsRepository {
                 leadingBidId,
                 leaderMax);
     }
+
+    public Optional<Long> getBidderId(long bidId) {
+        String sql = "SELECT bidder_id FROM bids WHERE id = ?";
+        return jdbcTemplate.query(sql, rs -> {
+            if (!rs.next()) {
+                return Optional.empty();
+            }
+            return Optional.of(rs.getLong("bidder_id"));
+        }, bidId);
+    }
 }
