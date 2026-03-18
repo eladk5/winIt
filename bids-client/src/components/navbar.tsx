@@ -85,8 +85,8 @@ export function Navbar() {
         router.push("/auth");
     }
 
-    // Keep the auth page clean and focused on signing in.
-    if (pathname.startsWith("/auth")) {
+    // Keep auth screens clean and focused.
+    if (pathname.startsWith("/auth") || pathname.startsWith("/register")) {
         return null;
     }
 
@@ -224,7 +224,7 @@ export function Navbar() {
                             </Link>
                             <Link
                                 className="flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white shadow-md shadow-primary/20 transition-all hover:bg-blue-600 hover:shadow-lg hover:shadow-primary/30 active:scale-95"
-                                href="/auth?mode=register"
+                                href="/register"
                             >
                                 Get Started
                             </Link>

@@ -199,17 +199,9 @@ export default function AuthPage() {
 
             <div className="mt-8 border-t border-slate-100 pt-6 text-center text-sm text-slate-600">
               Don&apos;t have an account?{" "}
-              <button
-                className="font-bold text-primary hover:underline"
-                onClick={() => {
-                  setErrorMessage(null);
-                  setSuccessMessage(null);
-                  setMode("register");
-                }}
-                type="button"
-              >
+              <Link className="font-bold text-primary hover:underline" href="/register">
                 Create account
-              </button>
+              </Link>
             </div>
           </div>
         ) : (
