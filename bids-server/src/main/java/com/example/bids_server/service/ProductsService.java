@@ -129,10 +129,6 @@ public class ProductsService {
             throw new IllegalArgumentException("category is required");
         if (newDeliveryLocation.isBlank())
             throw new IllegalArgumentException("deliveryLocation is required");
-        if (newStartingPrice.compareTo(BigDecimal.ZERO) <= 0)
-            throw new IllegalArgumentException("startingPrice must be > 0");
-        if (req.durationMinutes() != null && req.durationMinutes() < 10)
-            throw new IllegalArgumentException("durationMinutes must be >= 10");
 
         Product updatedProduct = productsRepository.updateProduct(
                 productId,
@@ -170,8 +166,8 @@ public class ProductsService {
             String category,
             String deliveryLocation,
             String imageUrl,
-            BigDecimal startingPrice,
-            Integer durationMinutes) {
+            @Positive BigDecimal startingPrice,
+            @Min(10) Integer durationMinutes) {
     }
 
     public record CreatedProduct(

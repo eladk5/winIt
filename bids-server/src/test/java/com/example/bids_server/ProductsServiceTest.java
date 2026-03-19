@@ -255,26 +255,4 @@ class ProductsServiceTest {
 
                 assertEquals("Unknown category: INVALID_CATEGORY", ex.getMessage());
         }
-
-        @Test
-        void updateProduct_failure_invalidStartingPrice() {
-                UpdateProductRequest req = new UpdateProductRequest(
-                                "Name", "Desc", "FURNITURE", "City", null, BigDecimal.ZERO, 10); // Starting price zero
-
-                IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                                () -> productsService.updateProduct(productId, req));
-
-                assertEquals("startingPrice must be > 0", ex.getMessage());
-        }
-
-        @Test
-        void updateProduct_failure_invalidDurationMinutes() {
-                UpdateProductRequest req = new UpdateProductRequest(
-                                "Name", "Desc", "FURNITURE", "City", null, BigDecimal.ONE, 5); // Duration < 10
-
-                IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                                () -> productsService.updateProduct(productId, req));
-
-                assertEquals("durationMinutes must be >= 10", ex.getMessage());
-        }
 }

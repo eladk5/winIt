@@ -131,7 +131,7 @@ public class ProductsController {
     @PatchMapping(value = "/products/{id}")
     @Operation(summary = "Update product details")
     public ResponseEntity<ProductDetailsResponse> updateProduct(@PathVariable long id,
-            @RequestBody UpdateProductRequest req) {
+            @RequestBody @Valid UpdateProductRequest req) {
         Product updatedProduct = productsService.updateProduct(id, req);
         return ResponseEntity.ok(ProductDetailsResponse.fromProduct(updatedProduct));
     }
