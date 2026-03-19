@@ -120,17 +120,18 @@ public class ProductsController {
         }
     }
 
-    @PostMapping(value = "/products", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/products")
     @Operation(summary = "Create a new product")
-    public ResponseEntity<CreateProductResponse> createProduct(@ModelAttribute @Valid CreateProductRequest req) {
+    public ResponseEntity<CreateProductResponse> createProduct(@RequestBody @Valid CreateProductRequest req) {
         CreatedProduct created = productsService.createProduct(req);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new CreateProductResponse(created.id(), created.endTime()));
     }
 
-    @PatchMapping(value = "/products/{id}", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PatchMapping(value = "/products/{id}")
     @Operation(summary = "Update product details")
-    public ResponseEntity<ProductDetailsResponse> updateProduct(@PathVariable long id, @ModelAttribute UpdateProductRequest req) {
+    public ResponseEntity<ProductDetailsResponse> updateProduct(@PathVariable long id,
+            @RequestBody UpdateProductRequest req) {
         Product updatedProduct = productsService.updateProduct(id, req);
         return ResponseEntity.ok(ProductDetailsResponse.fromProduct(updatedProduct));
     }
@@ -188,6 +189,6 @@ public class ProductsController {
             String mobilePhone,
             String city,
             String street,
-            String zipCode
-    ) {}
+            String zipCode) {
+    }
 }

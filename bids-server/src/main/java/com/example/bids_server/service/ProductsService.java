@@ -8,14 +8,12 @@ import com.example.bids_server.repository.Product;
 import com.example.bids_server.repository.ProductCategory;
 import com.example.bids_server.repository.ProductSearchQuery;
 import com.example.bids_server.repository.ProductsRepository;
-import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
@@ -28,16 +26,14 @@ public class ProductsService {
 
     private final ProductsRepository productsRepository;
     private final CurrentUserService currentUserService;
-    private final FileStorageService fileStorageService;
     private final BidsRepository bidsRepository;
     private final MeRepository meRepository;
 
     public ProductsService(ProductsRepository productsRepository, CurrentUserService currentUserService,
-            FileStorageService fileStorageService, BidsRepository bidsRepository,
+            BidsRepository bidsRepository,
             MeRepository meRepository) {
         this.productsRepository = productsRepository;
         this.currentUserService = currentUserService;
-        this.fileStorageService = fileStorageService;
         this.bidsRepository = bidsRepository;
         this.meRepository = meRepository;
     }
@@ -73,11 +69,6 @@ public class ProductsService {
             throw new IllegalArgumentException("category is required");
         }
 
-        String imageUrl = null;
-        if (req.image() != null && !req.image().isEmpty()) {
-            imageUrl = fileStorageService.saveFile(req.image());
-        }
-
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime endTime = now.plusMinutes(req.durationMinutes());
 
@@ -87,7 +78,7 @@ public class ProductsService {
                 trimToNull(req.description()),
                 cat.apiValue(),
                 req.deliveryLocation().trim(),
-                imageUrl,
+                trimToNull(req.imageUrl()),
                 now,
                 endTime,
                 req.startingPrice(),
@@ -130,10 +121,7 @@ public class ProductsService {
                 .map(duration -> existingProduct.startTime().plusMinutes(duration))
                 .orElse(existingProduct.endTime());
 
-        String newImageUrl = existingProduct.imageUrl();
-        if (req.image() != null && !req.image().isEmpty()) {
-            newImageUrl = fileStorageService.saveFile(req.image());
-        }
+        String newImageUrl = req.imageUrl() != null ? trimToNull(req.imageUrl()) : existingProduct.imageUrl();
 
         if (newName.isBlank())
             throw new IllegalArgumentException("name is required");
@@ -171,7 +159,7 @@ public class ProductsService {
             String description,
             @NotBlank String category,
             @NotBlank String deliveryLocation,
-            @Schema(type = "string", format = "binary") MultipartFile image,
+            String imageUrl,
             @NotNull @Positive BigDecimal startingPrice,
             @NotNull @Min(10) Integer durationMinutes) {
     }
@@ -181,7 +169,7 @@ public class ProductsService {
             String description,
             String category,
             String deliveryLocation,
-            @Schema(type = "string", format = "binary") MultipartFile image,
+            String imageUrl,
             BigDecimal startingPrice,
             Integer durationMinutes) {
     }
