@@ -1,6 +1,9 @@
 package com.example.bids_server.service;
 
+import com.example.bids_server.controller.ProductsController.SellerContactResponse;
 import com.example.bids_server.repository.BidsRepository;
+import com.example.bids_server.repository.MeRepository;
+import com.example.bids_server.repository.MeRepository.MeProfile;
 import com.example.bids_server.repository.Product;
 import com.example.bids_server.repository.ProductCategory;
 import com.example.bids_server.repository.ProductSearchQuery;
@@ -27,11 +30,11 @@ public class ProductsService {
     private final CurrentUserService currentUserService;
     private final FileStorageService fileStorageService;
     private final BidsRepository bidsRepository;
-    private final com.example.bids_server.repository.MeRepository meRepository;
+    private final MeRepository meRepository;
 
     public ProductsService(ProductsRepository productsRepository, CurrentUserService currentUserService,
             FileStorageService fileStorageService, BidsRepository bidsRepository,
-            com.example.bids_server.repository.MeRepository meRepository) {
+            MeRepository meRepository) {
         this.productsRepository = productsRepository;
         this.currentUserService = currentUserService;
         this.fileStorageService = fileStorageService;
@@ -193,7 +196,7 @@ public class ProductsService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
     }
 
-    public com.example.bids_server.controller.ProductsController.SellerContactResponse getSellerContact(long productId) {
+    public SellerContactResponse getSellerContact(long productId) {
         long currentUserId = currentUserService.requireAuthenticatedUserId();
 
         Product product = getProduct(productId);
@@ -213,10 +216,10 @@ public class ProductsService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not the winning bidder");
         }
 
-        com.example.bids_server.repository.MeRepository.MeProfile sellerProfile = meRepository.getMeProfile(product.sellerId())
+        MeProfile sellerProfile = meRepository.getMeProfile(product.sellerId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Seller not found"));
 
-        return new com.example.bids_server.controller.ProductsController.SellerContactResponse(
+        return new SellerContactResponse(
                 sellerProfile.firstName(),
                 sellerProfile.lastName(),
                 sellerProfile.mobilePhone(),
