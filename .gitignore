@@ -38,3 +38,4 @@ data/
 .vscode/
 
 server/uploads
+*.key
