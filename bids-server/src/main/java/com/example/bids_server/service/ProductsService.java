@@ -118,7 +118,7 @@ public class ProductsService {
         BigDecimal newStartingPrice = Optional.ofNullable(req.startingPrice())
                 .orElse(existingProduct.startingPrice());
         LocalDateTime newEndTime = Optional.ofNullable(req.durationMinutes())
-                .map(duration -> existingProduct.startTime().plusMinutes(duration))
+                .map(duration -> LocalDateTime.now().plusMinutes(duration))
                 .orElse(existingProduct.endTime());
 
         String newImageUrl = req.imageUrl() != null ? trimToNull(req.imageUrl()) : existingProduct.imageUrl();
