@@ -132,12 +132,6 @@ export default function SellPage() {
 
     const startingPriceNumber = Number(form.startingPrice);
 
-    if (!Number.isFinite(startingPriceNumber) || startingPriceNumber <= 0) {
-      setSubmitting(false);
-      setErrorMessage("Starting price must be greater than 0.");
-      return;
-    }
-
     if (!form.endDate || !form.endTime) {
       setSubmitting(false);
       setErrorMessage("Please select both end date and time.");
@@ -315,7 +309,7 @@ export default function SellPage() {
                   <input
                     className="w-full rounded-lg border border-slate-200 bg-slate-50 py-3 pl-8 pr-4 text-slate-900 outline-none transition-all hover:border-slate-300 focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20"
                     id="startPrice"
-                    min="0.01"
+                    min="1"
                     onChange={(event) => {
                       setForm((previous) => ({ ...previous, startingPrice: event.target.value }));
                     }}

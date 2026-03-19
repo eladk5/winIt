@@ -88,6 +88,16 @@ export default function DashboardPage() {
 
   const [profileForm, setProfileForm] = useState<ProfileForm>(emptyProfile);
   const [profileInitial, setProfileInitial] = useState<ProfileForm>(emptyProfile);
+  const [profileSubmitted, setProfileSubmitted] = useState(false);
+  const [touchedFields, setTouchedFields] = useState({
+    firstName: false,
+    lastName: false,
+    mobilePhone: false,
+  });
+
+  const isFieldInvalid = (field: "firstName" | "lastName" | "mobilePhone") => {
+    return (touchedFields[field] || profileSubmitted) && !profileForm[field].trim();
+  };
 
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [selectedContact, setSelectedContact] = useState<SellerContactResponse | null>(null);
@@ -196,6 +206,12 @@ export default function DashboardPage() {
 
   async function handleProfileSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setProfileSubmitted(true);
+
+    if (!profileForm.firstName.trim() || !profileForm.lastName.trim() || !profileForm.mobilePhone.trim()) {
+      setErrorMessage("First Name, Last Name, and Phone Number cannot be empty.");
+      return;
+    }
 
     const payload = {
       firstName: profileForm.firstName || undefined,
@@ -527,35 +543,62 @@ export default function DashboardPage() {
                   <div className="flex flex-col gap-2">
                     <label className="text-sm font-bold text-slate-700">First Name</label>
                     <input
-                      className="rounded-lg border-slate-200 focus:border-primary focus:ring-primary"
+                      className={`rounded-lg border-slate-200 focus:border-primary focus:ring-primary ${
+                        isFieldInvalid("firstName") ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                      }`}
+                      onBlur={() => {
+                        setTouchedFields((previous) => ({ ...previous, firstName: true }));
+                      }}
                       onChange={(event) => {
                         setProfileForm((previous) => ({ ...previous, firstName: event.target.value }));
                       }}
+                      required
                       type="text"
                       value={profileForm.firstName}
                     />
+                    {isFieldInvalid("firstName") && (
+                      <p className="text-xs font-medium text-red-500">First Name is required</p>
+                    )}
                   </div>
                   <div className="flex flex-col gap-2">
                     <label className="text-sm font-bold text-slate-700">Last Name</label>
                     <input
-                      className="rounded-lg border-slate-200 focus:border-primary focus:ring-primary"
+                      className={`rounded-lg border-slate-200 focus:border-primary focus:ring-primary ${
+                        isFieldInvalid("lastName") ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                      }`}
+                      onBlur={() => {
+                        setTouchedFields((previous) => ({ ...previous, lastName: true }));
+                      }}
                       onChange={(event) => {
                         setProfileForm((previous) => ({ ...previous, lastName: event.target.value }));
                       }}
+                      required
                       type="text"
                       value={profileForm.lastName}
                     />
+                    {isFieldInvalid("lastName") && (
+                      <p className="text-xs font-medium text-red-500">Last Name is required</p>
+                    )}
                   </div>
                   <div className="flex flex-col gap-2">
                     <label className="text-sm font-bold text-slate-700">Phone Number</label>
                     <input
-                      className="rounded-lg border-slate-200 focus:border-primary focus:ring-primary"
+                      className={`rounded-lg border-slate-200 focus:border-primary focus:ring-primary ${
+                        isFieldInvalid("mobilePhone") ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                      }`}
+                      onBlur={() => {
+                        setTouchedFields((previous) => ({ ...previous, mobilePhone: true }));
+                      }}
                       onChange={(event) => {
                         setProfileForm((previous) => ({ ...previous, mobilePhone: event.target.value }));
                       }}
+                      required
                       type="tel"
                       value={profileForm.mobilePhone}
                     />
+                    {isFieldInvalid("mobilePhone") && (
+                      <p className="text-xs font-medium text-red-500">Phone Number is required</p>
+                    )}
                   </div>
                   <div className="flex flex-col gap-2">
                     <label className="text-sm font-bold text-slate-700">City</label>
@@ -599,6 +642,12 @@ export default function DashboardPage() {
                       setProfileForm(profileInitial);
                       setProfileSavedMessage(null);
                       setErrorMessage(null);
+                      setProfileSubmitted(false);
+                      setTouchedFields({
+                        firstName: false,
+                        lastName: false,
+                        mobilePhone: false,
+                      });
                     }}
                     type="button"
                   >
@@ -606,7 +655,12 @@ export default function DashboardPage() {
                   </button>
                   <button
                     className="rounded-lg bg-primary px-6 py-2 font-bold text-white shadow-lg shadow-primary/20 transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
-                    disabled={savingProfile}
+                    disabled={
+                      savingProfile ||
+                      !profileForm.firstName.trim() ||
+                      !profileForm.lastName.trim() ||
+                      !profileForm.mobilePhone.trim()
+                    }
                     type="submit"
                   >
                     {savingProfile ? "Saving..." : "Save Changes"}
