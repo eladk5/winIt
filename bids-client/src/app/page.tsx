@@ -41,6 +41,7 @@ function categoryIcon(category: string): string {
     furniture: "chair",
     clothing: "checkroom",
     vehicles: "directions_car",
+    other: "more_horiz",
   };
 
   return icons[category.trim().toLowerCase()] ?? "category";
