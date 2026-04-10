@@ -14,6 +14,7 @@ import {
   type MyBidHistoryItem,
   type ProductCardResponse,
 } from "@/lib/api";
+import { formatMinRequiredBidMessage, formatRaiseMaxBidMessage } from "@/lib/bidding";
 import { formatCurrency, formatTimeLeft, resolveImageUrl } from "@/lib/format";
 import { showBidStatusModal } from "@/lib/swal";
 
@@ -50,8 +51,8 @@ function categoryIcon(category: string): string {
 function parseBidFeedback(
   status: string,
   message: string,
+  currentPrice: number,
   minRequiredMax: number | null,
-  currentMax?: number,
 ): { tone: QuickBidTone; text: string } {
   const normalized = status.toUpperCase();
 
@@ -64,18 +65,9 @@ function parseBidFeedback(
   }
 
   if (normalized === "REJECT_TOO_LOW") {
-    if (currentMax !== undefined && currentMax > 0) {
-      return {
-        tone: "amber",
-        text: `New max bid must be higher than your current max bid\nyour max bid: ${formatCurrency(currentMax)}`,
-      };
-    }
-
-    const closestAllowedText =
-      minRequiredMax !== null ? `Closest allowed bid: ${formatCurrency(minRequiredMax)}` : "Bid is too low.";
     return {
       tone: "amber",
-      text: message ? `${message} ${closestAllowedText}` : closestAllowedText,
+      text: formatMinRequiredBidMessage(currentPrice, minRequiredMax),
     };
   }
 
@@ -146,7 +138,7 @@ function ProductCard({
 
       setCurrentPrice(response.currentPrice);
       setBidAmount("");
-      setQuickBidMessage(parseBidFeedback(response.status, response.message, response.minRequiredMax, myBidEntry?.myMaxBid));
+      setQuickBidMessage(parseBidFeedback(response.status, response.message, response.currentPrice, response.minRequiredMax));
       if (response.status.toUpperCase() === "REJECT_TOO_LOW" && response.minRequiredMax !== null) {
         setBidAmount(String(response.minRequiredMax));
       }
@@ -181,12 +173,18 @@ function ProductCard({
       }
 
       let message = error instanceof ApiError ? error.message : "Unable to place bid.";
-      if (message.includes("New max bid must be higher") && myBidEntry?.myMaxBid) {
-        message = `New max bid must be higher than your current max bid\nyour max bid: ${formatCurrency(myBidEntry.myMaxBid)}`;
+      let tone: QuickBidTone = "red";
+      if (
+        message.includes("New max bid must be higher") &&
+        myBidEntry?.status.toUpperCase() === "WINNING" &&
+        myBidEntry.myMaxBid
+      ) {
+        message = formatRaiseMaxBidMessage(myBidEntry.myMaxBid);
+        tone = "amber";
       }
 
       setQuickBidMessage({
-        tone: "red",
+        tone,
         text: message,
       });
     } finally {
