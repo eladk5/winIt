@@ -194,20 +194,28 @@ function ProductCard({
   }
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white">
+    <div className="flex h-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white">
       <div className="relative aspect-square overflow-hidden bg-slate-100">
-        <img alt={product.name} className="h-full w-full object-cover" src={resolveImageUrl(product.imageUrl)} />
+        {resolveImageUrl(product.imageUrl) ? (
+          <img alt={product.name} className="h-full w-full object-cover" src={resolveImageUrl(product.imageUrl)!} />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-sm text-slate-400">
+            <span className="material-symbols-outlined text-4xl text-slate-300">image</span>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-1 flex-col p-4">
-        <h3 className="truncate text-base font-semibold text-slate-900">{product.name}</h3>
-        {myBidEntry && (
-          <div className="mt-2 text-right">
-            <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold uppercase ${bidStatusTone(myBidEntry.status.toUpperCase() as MyBidStatus)}`}>
-              Your Bid: {myBidEntry.status.toUpperCase()}
-            </span>
+        <div className="min-h-[4.5rem]">
+          <h3 className="truncate text-base font-semibold text-slate-900">{product.name}</h3>
+          <div className="mt-2 min-h-[1.75rem] text-right">
+            {myBidEntry && (
+              <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold uppercase ${bidStatusTone(myBidEntry.status.toUpperCase() as MyBidStatus)}`}>
+                Your Bid: {myBidEntry.status.toUpperCase()}
+              </span>
+            )}
           </div>
-        )}
+        </div>
 
         <div className="mt-4 flex items-end justify-between">
           <div>
@@ -220,57 +228,61 @@ function ProductCard({
           </div>
         </div>
 
-        <p className="mt-3 line-clamp-2 text-sm text-slate-600">{product.description || ""}</p>
+        <p className="mt-3 min-h-[2.75rem] line-clamp-2 text-sm text-slate-600">{product.description || ""}</p>
 
-        <div className="mt-4 space-y-2.5">
-          <form className="flex items-stretch gap-0 overflow-hidden rounded-xl border border-slate-200 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary" onSubmit={handleQuickBid}>
-            <span className="flex items-center bg-slate-50 pl-3 pr-1 text-sm font-semibold text-slate-400 select-none">$</span>
-            <input
-              className="h-11 w-full min-w-0 bg-slate-50 px-2 text-sm font-medium text-slate-800 outline-none placeholder:text-slate-400"
-              min={minimumBid}
-              onChange={(event) => {
-                setBidAmount(event.target.value);
-              }}
-              placeholder={minimumBid.toFixed(2)}
-              step="0.01"
-              type="number"
-              value={bidAmount}
-            />
-            <button
-              className="flex shrink-0 items-center gap-1.5 px-4 text-[13px] font-bold text-white transition-all duration-200 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={isSubmittingBid || isEnded}
-              style={{ background: "linear-gradient(135deg, #135bec 0%, #6366f1 100%)" }}
-              type="submit"
+        <div className="mt-auto pt-4">
+          <div className="space-y-2.5">
+            <form className="flex items-stretch gap-0 overflow-hidden rounded-xl border border-slate-200 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary" onSubmit={handleQuickBid}>
+              <span className="flex items-center bg-slate-50 pl-3 pr-1 text-sm font-semibold text-slate-400 select-none">$</span>
+              <input
+                className="h-11 w-full min-w-0 bg-slate-50 px-2 text-sm font-medium text-slate-800 outline-none placeholder:text-slate-400"
+                min={minimumBid}
+                onChange={(event) => {
+                  setBidAmount(event.target.value);
+                }}
+                placeholder={minimumBid.toFixed(2)}
+                step="0.01"
+                type="number"
+                value={bidAmount}
+              />
+              <button
+                className="flex shrink-0 items-center gap-1.5 px-4 text-[13px] font-bold text-white transition-all duration-200 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={isSubmittingBid || isEnded}
+                style={{ background: "linear-gradient(135deg, #135bec 0%, #6366f1 100%)" }}
+                type="submit"
+              >
+                <span className="material-symbols-outlined text-[16px]">gavel</span>
+                {isSubmittingBid ? "..." : myBidEntry?.status.toUpperCase() === "WINNING" ? "Raise" : "Bid"}
+              </button>
+            </form>
+
+            <Link
+              className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 py-2.5 text-[13px] font-semibold text-slate-600 transition-all duration-200 hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
+              href={`/products/${product.id}`}
             >
-              <span className="material-symbols-outlined text-[16px]">gavel</span>
-              {isSubmittingBid ? "..." : "Bid"}
-            </button>
-          </form>
-
-          <Link
-            className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 py-2.5 text-[13px] font-semibold text-slate-600 transition-all duration-200 hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
-            href={`/products/${product.id}`}
-          >
-            <span className="material-symbols-outlined text-[16px]">open_in_new</span>
-            View Auction
-          </Link>
-        </div>
-
-        {quickBidMessage && (
-          <div
-            className={`mt-2.5 flex items-start gap-1.5 rounded-lg px-3 py-2 text-xs font-medium whitespace-pre-line ${quickBidMessage.tone === "green"
-              ? "bg-emerald-50 text-emerald-600"
-              : quickBidMessage.tone === "amber"
-                ? "bg-amber-50 text-amber-600"
-                : "bg-red-50 text-red-600"
-              }`}
-          >
-            <span className="material-symbols-outlined text-[14px]">
-              {quickBidMessage.tone === "green" ? "check_circle" : quickBidMessage.tone === "amber" ? "warning" : "error"}
-            </span>
-            {quickBidMessage.text}
+              <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+              View Auction
+            </Link>
           </div>
-        )}
+
+          <div className="mt-2.5 min-h-[3.5rem]">
+            {quickBidMessage && (
+              <div
+                className={`flex items-start gap-1.5 rounded-lg px-3 py-2 text-xs font-medium whitespace-pre-line ${quickBidMessage.tone === "green"
+                  ? "bg-emerald-50 text-emerald-600"
+                  : quickBidMessage.tone === "amber"
+                    ? "bg-amber-50 text-amber-600"
+                    : "bg-red-50 text-red-600"
+                  }`}
+              >
+                <span className="material-symbols-outlined text-[14px]">
+                  {quickBidMessage.tone === "green" ? "check_circle" : quickBidMessage.tone === "amber" ? "warning" : "error"}
+                </span>
+                {quickBidMessage.text}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -690,7 +702,7 @@ export default function CatalogPage() {
           )}
 
           {isLoading && (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: 6 }).map((_, index) => (
                 <div className="overflow-hidden rounded-xl border border-slate-200 bg-white" key={index}>
                   <div className="aspect-square animate-pulse bg-slate-100"></div>
@@ -711,7 +723,7 @@ export default function CatalogPage() {
           )}
 
           {!isLoading && !errorMessage && products.length > 0 && (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {products.map((product) => (
                 <ProductCard
                   key={product.id}

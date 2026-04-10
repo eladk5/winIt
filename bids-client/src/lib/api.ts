@@ -191,7 +191,7 @@ export type CreateProductRequest = {
   description?: string;
   category: string;
   deliveryLocation: string;
-  image?: File | Blob | null;
+  imageUrl?: string;
   startingPrice: number;
   durationMinutes: number;
 };
@@ -206,7 +206,7 @@ export type UpdateProductRequest = {
   description?: string;
   category?: string;
   deliveryLocation?: string;
-  image?: File | Blob | null;
+  imageUrl?: string;
   startingPrice?: number;
   durationMinutes?: number;
 };
@@ -288,46 +288,7 @@ async function request<T>(
   return JSON.parse(raw) as T;
 }
 
-function appendIfPresent(formData: FormData, key: string, value: unknown): void {
-  if (value === undefined || value === null || value === "") {
-    return;
-  }
 
-  if (typeof Blob !== "undefined" && value instanceof Blob) {
-    formData.append(key, value);
-    return;
-  }
-
-  formData.append(key, String(value));
-}
-
-function toCreateProductFormData(payload: CreateProductRequest): FormData {
-  const formData = new FormData();
-
-  appendIfPresent(formData, "name", payload.name);
-  appendIfPresent(formData, "description", payload.description);
-  appendIfPresent(formData, "category", payload.category);
-  appendIfPresent(formData, "deliveryLocation", payload.deliveryLocation);
-  appendIfPresent(formData, "image", payload.image);
-  appendIfPresent(formData, "startingPrice", payload.startingPrice);
-  appendIfPresent(formData, "durationMinutes", payload.durationMinutes);
-
-  return formData;
-}
-
-function toUpdateProductFormData(payload: UpdateProductRequest): FormData {
-  const formData = new FormData();
-
-  appendIfPresent(formData, "name", payload.name);
-  appendIfPresent(formData, "description", payload.description);
-  appendIfPresent(formData, "category", payload.category);
-  appendIfPresent(formData, "deliveryLocation", payload.deliveryLocation);
-  appendIfPresent(formData, "image", payload.image);
-  appendIfPresent(formData, "startingPrice", payload.startingPrice);
-  appendIfPresent(formData, "durationMinutes", payload.durationMinutes);
-
-  return formData;
-}
 
 export function listCategories(): Promise<string[]> {
   return request<string[]>("/api/categories");
@@ -348,7 +309,7 @@ export function getSellerContact(id: number): Promise<SellerContactResponse> {
 export function createProduct(payload: CreateProductRequest): Promise<CreateProductResponse> {
   return request<CreateProductResponse>("/api/products", {
     method: "POST",
-    body: toCreateProductFormData(payload),
+    body: JSON.stringify(payload),
   });
 }
 
@@ -358,7 +319,7 @@ export function updateProduct(
 ): Promise<ProductDetailsResponse> {
   return request<ProductDetailsResponse>(`/api/products/${id}`, {
     method: "PATCH",
-    body: toUpdateProductFormData(payload),
+    body: JSON.stringify(payload),
   });
 }
 

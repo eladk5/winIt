@@ -1,4 +1,4 @@
-﻿import { getApiBaseUrl } from "@/lib/api";
+import { getApiBaseUrl } from "@/lib/api";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -70,9 +70,9 @@ export function formatTimeLeft(
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
-export function resolveImageUrl(imageUrl: string | null | undefined): string {
+export function resolveImageUrl(imageUrl: string | null | undefined): string | null {
   if (!imageUrl) {
-    return "https://images.unsplash.com/photo-1519710164239-da123dc03ef4?auto=format&fit=crop&w=900&q=80";
+    return null;
   }
 
   if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {

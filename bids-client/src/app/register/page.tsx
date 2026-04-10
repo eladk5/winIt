@@ -103,7 +103,7 @@ export default function RegisterPage() {
       <div className="mb-8">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-start">
           <Link className="flex items-center text-primary" href="/">
-            <Brand className="gap-3" wordmarkClassName="tracking-tight" />
+            <Brand className="gap-3" />
           </Link>
         </div>
       </div>

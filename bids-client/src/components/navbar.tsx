@@ -47,7 +47,7 @@ export function Navbar() {
             isMounted = false;
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [pathname]);
+    }, [pathname, user]);
 
     // Close user menu on outside click
     useEffect(() => {
@@ -100,7 +100,7 @@ export function Navbar() {
         <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/80 px-4 py-0 backdrop-blur-md lg:px-10">
             <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4">
                 <Link className="flex items-center text-primary" href="/">
-                    <Brand compact className="gap-2" taglineClassName="hidden sm:block" wordmarkClassName="tracking-tight" />
+                    <Brand compact className="gap-2" />
                 </Link>
 
                 {/* Navigation links */}
@@ -226,7 +226,7 @@ export function Navbar() {
                                 className="flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white shadow-md shadow-primary/20 transition-all hover:bg-blue-600 hover:shadow-lg hover:shadow-primary/30 active:scale-95"
                                 href="/register"
                             >
-                                Get Started
+                                Register
                             </Link>
                         </div>
                     )}

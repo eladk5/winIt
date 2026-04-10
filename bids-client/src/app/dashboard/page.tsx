@@ -397,7 +397,13 @@ export default function DashboardPage() {
                         <td className="px-6 py-5">
                           <div className="flex items-center gap-3">
                             <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-lg bg-slate-100">
-                              <img alt={item.productName} className="h-full w-full object-cover" src={resolveImageUrl(item.imageUrl)} />
+                              {resolveImageUrl(item.imageUrl) ? (
+                                <img alt={item.productName} className="h-full w-full object-cover" src={resolveImageUrl(item.imageUrl)!} />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center">
+                                  <span className="material-symbols-outlined text-sm text-slate-300">image</span>
+                                </div>
+                              )}
                             </div>
                             <Link className="font-semibold hover:text-primary" href={`/products/${item.productId}`}>
                               {item.productName}
@@ -458,7 +464,13 @@ export default function DashboardPage() {
                         key={`${item.productId}-${item.endTime}`}
                       >
                         <div className={`relative h-40 overflow-hidden ${isActive ? "" : "grayscale"}`}>
-                          <img alt={item.productName} className="h-full w-full object-cover" src={resolveImageUrl(item.imageUrl)} />
+                          {resolveImageUrl(item.imageUrl) ? (
+                            <img alt={item.productName} className="h-full w-full object-cover" src={resolveImageUrl(item.imageUrl)!} />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center bg-slate-100">
+                              <span className="material-symbols-outlined text-4xl text-slate-300">image</span>
+                            </div>
+                          )}
                           <span
                             className={`absolute right-3 top-3 rounded px-2 py-1 text-[10px] font-bold uppercase text-white ${
                               tone === "green"
@@ -494,10 +506,18 @@ export default function DashboardPage() {
                           {item.canEdit ? (
                             <Link
                               className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-slate-100 py-2 font-bold text-slate-700 transition-all hover:bg-slate-200"
-                              href={`/products/${item.productId}`}
+                              href={`/products/${item.productId}/edit`}
                             >
                               <span className="material-symbols-outlined text-sm">edit</span>
                               Edit Listing
+                            </Link>
+                          ) : isActive ? (
+                            <Link
+                              className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-slate-100 py-2 font-bold text-slate-700 transition-all hover:bg-slate-200"
+                              href={`/products/${item.productId}`}
+                            >
+                              <span className="material-symbols-outlined text-sm">visibility</span>
+                              View Listing
                             </Link>
                           ) : (
                             <button
