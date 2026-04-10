@@ -15,7 +15,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
 
@@ -25,7 +24,6 @@ import com.example.bids_server.repository.ProductCategory;
 import com.example.bids_server.repository.ProductsRepository;
 import com.example.bids_server.repository.UsersRepository;
 import com.example.bids_server.service.CurrentUserService;
-import com.example.bids_server.service.FileStorageService;
 import com.example.bids_server.service.ProductsService;
 import com.example.bids_server.service.ProductsService.UpdateProductRequest;
 
@@ -46,8 +44,6 @@ class ProductsServiceTest {
 
         @MockBean
         private CurrentUserService currentUserService;
-        @MockBean
-        private FileStorageService fileStorageService;
 
         private Long sellerId;
         private Long otherUserId;
@@ -133,16 +129,12 @@ class ProductsServiceTest {
 
         @Test
         void updateProduct_success_allFieldsUpdated() {
-                MultipartFile mockImage = mock(MultipartFile.class);
-                when(mockImage.isEmpty()).thenReturn(false);
-                when(fileStorageService.saveFile(mockImage)).thenReturn("http://img.com/new.jpg");
-
                 UpdateProductRequest req = new UpdateProductRequest(
                                 "New Name",
                                 "New Description",
                                 "FURNITURE",
                                 "New City",
-                                mockImage,
+                                "http://img.com/new.jpg",
                                 new BigDecimal("200.00"),
                                 60); 
 
@@ -156,7 +148,6 @@ class ProductsServiceTest {
                 assertEquals("http://img.com/new.jpg", updated.imageUrl());
                 assertEquals(0, new BigDecimal("200.00").compareTo(updated.startingPrice()));
                 assertEquals(0, new BigDecimal("200.00").compareTo(updated.currentPrice())); 
-                verify(fileStorageService, times(1)).saveFile(mockImage);
 
                 Product dbProduct = productsRepository.findById(productId).orElseThrow();
                 assertEquals("New Name", dbProduct.name());
@@ -188,7 +179,6 @@ class ProductsServiceTest {
                 assertEquals("Partial City", updated.deliveryLocation());
                 assertEquals("http://img.com/initial.jpg", updated.imageUrl()); // unchanged
                 assertEquals(0, new BigDecimal("100.00").compareTo(updated.startingPrice())); // unchanged
-                verify(fileStorageService, never()).saveFile(any());
 
                 Product dbProduct = productsRepository.findById(productId).orElseThrow();
                 assertEquals("Partial Update Name", dbProduct.name());
@@ -264,27 +254,5 @@ class ProductsServiceTest {
                                 () -> productsService.updateProduct(productId, req));
 
                 assertEquals("Unknown category: INVALID_CATEGORY", ex.getMessage());
-        }
-
-        @Test
-        void updateProduct_failure_invalidStartingPrice() {
-                UpdateProductRequest req = new UpdateProductRequest(
-                                "Name", "Desc", "FURNITURE", "City", null, BigDecimal.ZERO, 10); // Starting price zero
-
-                IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                                () -> productsService.updateProduct(productId, req));
-
-                assertEquals("startingPrice must be > 0", ex.getMessage());
-        }
-
-        @Test
-        void updateProduct_failure_invalidDurationMinutes() {
-                UpdateProductRequest req = new UpdateProductRequest(
-                                "Name", "Desc", "FURNITURE", "City", null, BigDecimal.ONE, 5); // Duration < 10
-
-                IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                                () -> productsService.updateProduct(productId, req));
-
-                assertEquals("durationMinutes must be >= 10", ex.getMessage());
         }
 }

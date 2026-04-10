@@ -117,12 +117,6 @@ export default function SellPage() {
 
     const startingPriceNumber = Number(form.startingPrice);
 
-    if (!Number.isFinite(startingPriceNumber) || startingPriceNumber <= 0) {
-      setSubmitting(false);
-      setErrorMessage("Starting price must be greater than 0.");
-      return;
-    }
-
     if (!form.endDate || !form.endTime) {
       setSubmitting(false);
       setErrorMessage("Please select both end date and time.");
