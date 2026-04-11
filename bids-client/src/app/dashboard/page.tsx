@@ -433,7 +433,7 @@ export default function DashboardPage() {
                             {item.status}
                           </span>
                         </td>
-                        <td className="px-6 py-5 text-slate-500">{formatTimeLeft(item.endTime, nowMs)}</td>
+                        <td className="px-6 py-5 text-slate-500" suppressHydrationWarning>{formatTimeLeft(item.endTime, nowMs)}</td>
                         <td className="px-6 py-5 text-right">
                           {item.status.trim().toUpperCase() === "WON" && (
                             <button

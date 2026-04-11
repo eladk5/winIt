@@ -99,7 +99,7 @@ export function BiddingCard({
 
             <div className="mt-6 flex items-center justify-between border-y border-slate-100 py-3 text-sm">
               <span className="text-slate-500">Time Left</span>
-              <span className="font-bold text-slate-900">{timeLeft}</span>
+              <span className="font-bold text-slate-900" suppressHydrationWarning>{timeLeft}</span>
             </div>
 
             <form className="mt-6 space-y-4" onSubmit={onSubmitBid}>

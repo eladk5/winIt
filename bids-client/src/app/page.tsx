@@ -223,7 +223,7 @@ function ProductCard({
           </div>
           <div className="text-right">
             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Time Left</p>
-            <p className={`mt-1 text-sm font-bold ${isEnded ? "text-slate-500" : "text-red-500"}`}>{timeLeft}</p>
+            <p className={`mt-1 text-sm font-bold ${isEnded ? "text-slate-500" : "text-red-500"}`} suppressHydrationWarning>{timeLeft}</p>
           </div>
         </div>
 
