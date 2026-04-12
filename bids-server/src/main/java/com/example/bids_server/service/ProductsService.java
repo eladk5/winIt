@@ -41,8 +41,11 @@ public class ProductsService {
         this.incrementPolicy = incrementPolicy;
     }
 
-    public BigDecimal calculateMinRequiredBid(BigDecimal currentPrice) {
-        return currentPrice.add(incrementPolicy.stepFor(currentPrice));
+    public BigDecimal calculateMinRequiredBid(Product p) {
+        if (p.leadingBidId() == null) {
+            return p.currentPrice();
+        }
+        return p.currentPrice().add(incrementPolicy.stepFor(p.currentPrice()));
     }
 
     /**

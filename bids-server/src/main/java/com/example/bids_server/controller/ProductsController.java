@@ -72,7 +72,7 @@ public class ProductsController {
         List<Product> products = productsService.searchCatalog(q);
 
         List<ProductCardResponse> response = products.stream()
-                .map(p -> ProductCardResponse.fromProduct(p, productsService.calculateMinRequiredBid(p.currentPrice())))
+                .map(p -> ProductCardResponse.fromProduct(p, productsService.calculateMinRequiredBid(p)))
                 .toList();
 
         return ResponseEntity.ok(response);
@@ -135,14 +135,14 @@ public class ProductsController {
     public ResponseEntity<ProductDetailsResponse> updateProduct(@PathVariable long id,
             @RequestBody @Valid UpdateProductRequest req) {
         Product updatedProduct = productsService.updateProduct(id, req);
-        return ResponseEntity.ok(ProductDetailsResponse.fromProduct(updatedProduct, productsService.calculateMinRequiredBid(updatedProduct.currentPrice())));
+        return ResponseEntity.ok(ProductDetailsResponse.fromProduct(updatedProduct, productsService.calculateMinRequiredBid(updatedProduct)));
     }
 
     @GetMapping("/products/{id}")
     @Operation(summary = "Get product details")
     public ResponseEntity<ProductDetailsResponse> getProductById(@PathVariable long id) {
         Product p = productsService.getProduct(id);
-        return ResponseEntity.ok(ProductDetailsResponse.fromProduct(p, productsService.calculateMinRequiredBid(p.currentPrice())));
+        return ResponseEntity.ok(ProductDetailsResponse.fromProduct(p, productsService.calculateMinRequiredBid(p)));
     }
 
     @GetMapping("/products/{id}/seller-contact")
