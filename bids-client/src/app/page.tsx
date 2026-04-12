@@ -497,7 +497,7 @@ export default function CatalogPage() {
       <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col lg:flex-row">
         <aside className="w-full shrink-0 lg:w-72 lg:p-4">
           <div
-            className="sticky top-[5rem] flex flex-col gap-6 rounded-2xl border border-white/60 p-5"
+            className="sticky top-[5rem] flex flex-col gap-6 rounded-2xl border border-white/60 p-5 overflow-y-auto max-h-[calc(100vh-7rem)] overscroll-contain custom-scrollbar"
             style={{
               background: "linear-gradient(135deg, rgba(255,255,255,0.92) 0%, rgba(246,246,248,0.96) 100%)",
               backdropFilter: "blur(16px)",

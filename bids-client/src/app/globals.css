@@ -472,6 +472,28 @@ input[type="number"] {
   }
 }
 
+/* ── Custom scrollbar for sidebar ── */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 10px;
+}
+
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: rgba(19, 91, 236, 0.2);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(19, 91, 236, 0.4);
+}
+
 @media (max-width: 640px) {
   .swal-theme-popup {
     padding: 1.2rem !important;
