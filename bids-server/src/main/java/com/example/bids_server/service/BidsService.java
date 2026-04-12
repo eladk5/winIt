@@ -132,7 +132,7 @@ public class BidsService {
                 BidResultStatus.WINNING,
                 productId,
                 currentPrice,
-                currentPrice.add(incrementPolicy.stepFor(currentPrice)),
+                currentPrice,
                 newBidId,
                 null,
                 "Your max bid was updated successfully");
@@ -161,7 +161,7 @@ public class BidsService {
                 BidResultStatus.WINNING,
                 productId,
                 currentPrice,
-                currentPrice.add(incrementPolicy.stepFor(currentPrice)),
+                currentPrice,
                 newBidId,
                 null,
                 "Your bid was accepted and you are currently leading");
@@ -181,7 +181,7 @@ public class BidsService {
                 BidResultStatus.WINNING,
                 productId,
                 newPrice,
-                newPrice.add(incrementPolicy.stepFor(newPrice)),
+                newPrice,
                 newBidId,
                 null,
                 "Your bid was accepted and you are currently leading");
