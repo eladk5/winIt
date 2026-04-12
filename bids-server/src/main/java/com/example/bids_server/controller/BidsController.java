@@ -42,6 +42,7 @@ public class BidsController {
             String status,
             BigDecimal currentPrice,
             BigDecimal minRequiredMax, // null unless REJECT_TOO_LOW
+            BigDecimal nextMinRequiredBid,
             String message) {
     }
 
@@ -55,6 +56,7 @@ public class BidsController {
                 result.status().name(),
                 result.newCurrentPrice(),
                 result.minRequiredMax(),
+                result.nextMinRequiredBid(),
                 result.message());
                 
         return ResponseEntity.ok(body);

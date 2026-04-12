@@ -40,6 +40,7 @@ public class BidsService {
             BidResultStatus status,
             long productId,
             BigDecimal newCurrentPrice,
+            BigDecimal nextMinRequiredBid,
             Long leadingBidId, // may change only on WINNING
             BigDecimal minRequiredMax, // only for REJECT_TOO_LOW (else null)
             String message) {
@@ -94,13 +95,6 @@ public class BidsService {
             return updateLeaderMaxAmount(productId, bidderId, bidderMaxAmount, currentPrice, currentBidMaxAmount);
         }
 
-        // CASE: bidderMaxAmount > currentBidMaxAmount => bidder becomes leader
-        if (bidderMaxAmount.compareTo(currentBidMaxAmount) > 0) {
-            return bidderWins(bidderMaxAmount, productId, bidderId, step, currentBidMaxAmount);
-        }
-
-        // bidderMaxAmount <= currentBidMaxAmount => bidder cannot become leader
-
         // CASE: bidderMaxAmount < currentPrice + step => reject, NO DB CHANGES
         BigDecimal minRequired = currentPrice.add(step);
         if (bidderMaxAmount.compareTo(minRequired) < 0) {
@@ -108,12 +102,19 @@ public class BidsService {
                     BidResultStatus.REJECT_TOO_LOW,
                     productId,
                     currentPrice,
+                    minRequired,
                     currentLeaderBidId,
                     minRequired,
                     "Bid too low. You must bid at least " + minRequired);
         }
 
-        // CASE: valid but outbid
+        // CASE: bidderMaxAmount > currentBidMaxAmount => bidder becomes leader
+        if (bidderMaxAmount.compareTo(currentBidMaxAmount) > 0) {
+            return bidderWins(bidderMaxAmount, productId, bidderId, step, currentBidMaxAmount);
+        }
+
+        // bidderMaxAmount <= currentBidMaxAmount => bidder cannot become leader
+        // CASE: outbid
         return outBid(bidderMaxAmount, productId, step, currentBidMaxAmount, currentLeaderBidId);
     }
 
@@ -131,6 +132,7 @@ public class BidsService {
                 BidResultStatus.WINNING,
                 productId,
                 currentPrice,
+                currentPrice.add(incrementPolicy.stepFor(currentPrice)),
                 newBidId,
                 null,
                 "Your max bid was updated successfully");
@@ -143,6 +145,7 @@ public class BidsService {
             return new PlaceBidResult(
                     BidResultStatus.REJECT_TOO_LOW,
                     productId,
+                    currentPrice,
                     currentPrice,
                     null,
                     currentPrice,
@@ -158,6 +161,7 @@ public class BidsService {
                 BidResultStatus.WINNING,
                 productId,
                 currentPrice,
+                currentPrice.add(incrementPolicy.stepFor(currentPrice)),
                 newBidId,
                 null,
                 "Your bid was accepted and you are currently leading");
@@ -177,6 +181,7 @@ public class BidsService {
                 BidResultStatus.WINNING,
                 productId,
                 newPrice,
+                newPrice.add(incrementPolicy.stepFor(newPrice)),
                 newBidId,
                 null,
                 "Your bid was accepted and you are currently leading");
@@ -197,6 +202,7 @@ public class BidsService {
                 BidResultStatus.OUTBID,
                 productId,
                 newPrice,
+                newPrice.add(incrementPolicy.stepFor(newPrice)),
                 currentLeaderBidId,
                 null,
                 "You were immediately outbid by another user's max bid");

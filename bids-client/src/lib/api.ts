@@ -70,6 +70,7 @@ export type ProductCardResponse = {
   name: string;
   description: string;
   currentPrice: number;
+  minRequiredBid: number;
   imageUrl: string | null;
   endTime: string;
   deliveryLocation: string;
@@ -87,6 +88,7 @@ export type ProductDetailsResponse = {
   endTime: string;
   startingPrice: number;
   currentPrice: number;
+  minRequiredBid: number;
   leadingBidId: number | null;
 };
 
@@ -108,6 +110,7 @@ export type PlaceBidResponse = {
   status: string;
   currentPrice: number;
   minRequiredMax: number | null;
+  nextMinRequiredBid: number;
   message: string;
 };
 

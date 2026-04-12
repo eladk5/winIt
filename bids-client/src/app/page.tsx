@@ -99,6 +99,7 @@ function ProductCard({
 }) {
   const router = useRouter();
   const [currentPrice, setCurrentPrice] = useState(product.currentPrice);
+  const [minRequiredBid, setMinRequiredBid] = useState(product.minRequiredBid);
   const [bidAmount, setBidAmount] = useState("");
   const [quickBidMessage, setQuickBidMessage] = useState<{ tone: QuickBidTone; text: string } | null>(null);
   const [isSubmittingBid, setIsSubmittingBid] = useState(false);
@@ -108,9 +109,15 @@ function ProductCard({
 
   useEffect(() => {
     setCurrentPrice(product.currentPrice);
-  }, [product.currentPrice]);
+    setMinRequiredBid(product.minRequiredBid);
+  }, [product.currentPrice, product.minRequiredBid]);
 
-  const minimumBid = useMemo(() => Number((currentPrice + 0.01).toFixed(2)), [currentPrice]);
+  const minimumBid = useMemo(() => {
+    if (myBidEntry?.status.toUpperCase() === "WINNING") {
+      return Number((myBidEntry.myMaxBid + 0.01).toFixed(2));
+    }
+    return minRequiredBid;
+  }, [minRequiredBid, myBidEntry]);
 
   async function handleQuickBid(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -137,6 +144,7 @@ function ProductCard({
       });
 
       setCurrentPrice(response.currentPrice);
+      setMinRequiredBid(response.nextMinRequiredBid);
       setBidAmount("");
       setQuickBidMessage(parseBidFeedback(response.status, response.message, response.currentPrice, response.minRequiredMax));
       if (response.status.toUpperCase() === "REJECT_TOO_LOW" && response.minRequiredMax !== null) {
