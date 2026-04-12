@@ -28,14 +28,21 @@ public class ProductsService {
     private final CurrentUserService currentUserService;
     private final BidsRepository bidsRepository;
     private final MeRepository meRepository;
+    private final BidIncrementPolicy incrementPolicy;
 
     public ProductsService(ProductsRepository productsRepository, CurrentUserService currentUserService,
             BidsRepository bidsRepository,
-            MeRepository meRepository) {
+            MeRepository meRepository,
+            BidIncrementPolicy incrementPolicy) {
         this.productsRepository = productsRepository;
         this.currentUserService = currentUserService;
         this.bidsRepository = bidsRepository;
         this.meRepository = meRepository;
+        this.incrementPolicy = incrementPolicy;
+    }
+
+    public BigDecimal calculateMinRequiredBid(BigDecimal currentPrice) {
+        return currentPrice.add(incrementPolicy.stepFor(currentPrice));
     }
 
     /**

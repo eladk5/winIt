@@ -72,7 +72,7 @@ public class ProductsController {
         List<Product> products = productsService.searchCatalog(q);
 
         List<ProductCardResponse> response = products.stream()
-                .map(ProductCardResponse::fromProduct)
+                .map(p -> ProductCardResponse.fromProduct(p, productsService.calculateMinRequiredBid(p.currentPrice())))
                 .toList();
 
         return ResponseEntity.ok(response);
@@ -103,16 +103,18 @@ public class ProductsController {
             String name,
             String description,
             BigDecimal currentPrice,
+            BigDecimal minRequiredBid,
             String imageUrl,
             LocalDateTime endTime,
             String deliveryLocation,
             String category) {
-        public static ProductCardResponse fromProduct(Product p) {
+        public static ProductCardResponse fromProduct(Product p, BigDecimal minRequiredBid) {
             return new ProductCardResponse(
                     p.id(),
                     p.name(),
                     p.description(),
                     p.currentPrice(),
+                    minRequiredBid,
                     p.imageUrl(),
                     p.endTime(),
                     p.deliveryLocation(),
@@ -133,14 +135,14 @@ public class ProductsController {
     public ResponseEntity<ProductDetailsResponse> updateProduct(@PathVariable long id,
             @RequestBody @Valid UpdateProductRequest req) {
         Product updatedProduct = productsService.updateProduct(id, req);
-        return ResponseEntity.ok(ProductDetailsResponse.fromProduct(updatedProduct));
+        return ResponseEntity.ok(ProductDetailsResponse.fromProduct(updatedProduct, productsService.calculateMinRequiredBid(updatedProduct.currentPrice())));
     }
 
     @GetMapping("/products/{id}")
     @Operation(summary = "Get product details")
     public ResponseEntity<ProductDetailsResponse> getProductById(@PathVariable long id) {
         Product p = productsService.getProduct(id);
-        return ResponseEntity.ok(ProductDetailsResponse.fromProduct(p));
+        return ResponseEntity.ok(ProductDetailsResponse.fromProduct(p, productsService.calculateMinRequiredBid(p.currentPrice())));
     }
 
     @GetMapping("/products/{id}/seller-contact")
@@ -166,8 +168,9 @@ public class ProductsController {
             LocalDateTime endTime,
             BigDecimal startingPrice,
             BigDecimal currentPrice,
+            BigDecimal minRequiredBid,
             Long leadingBidId) {
-        public static ProductDetailsResponse fromProduct(Product p) {
+        public static ProductDetailsResponse fromProduct(Product p, BigDecimal minRequiredBid) {
             return new ProductDetailsResponse(
                     p.id(),
                     p.name(),
@@ -179,6 +182,7 @@ public class ProductsController {
                     p.endTime(),
                     p.startingPrice(),
                     p.currentPrice(),
+                    minRequiredBid,
                     p.leadingBidId());
         }
     }

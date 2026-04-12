@@ -135,12 +135,16 @@ export default function ProductDetailsPage() {
       : null;
 
   const minimumBid = useMemo(() => {
-    if (!Number.isFinite(currentPrice)) {
+    if (!product) {
       return 0;
     }
 
-    return Number((currentPrice + 0.01).toFixed(2));
-  }, [currentPrice]);
+    if (normalizedMyBidStatus === "WINNING" && myBidEntry) {
+      return Number((myBidEntry.myMaxBid + 0.01).toFixed(2));
+    }
+
+    return product.minRequiredBid;
+  }, [product, normalizedMyBidStatus, myBidEntry]);
 
   async function handlePlaceBid(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

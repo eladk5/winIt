@@ -110,7 +110,12 @@ function ProductCard({
     setCurrentPrice(product.currentPrice);
   }, [product.currentPrice]);
 
-  const minimumBid = useMemo(() => Number((currentPrice + 0.01).toFixed(2)), [currentPrice]);
+  const minimumBid = useMemo(() => {
+    if (myBidEntry?.status.toUpperCase() === "WINNING") {
+      return Number((myBidEntry.myMaxBid + 0.01).toFixed(2));
+    }
+    return product.minRequiredBid;
+  }, [product.minRequiredBid, myBidEntry]);
 
   async function handleQuickBid(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

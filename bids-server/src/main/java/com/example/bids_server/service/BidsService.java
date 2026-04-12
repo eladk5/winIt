@@ -94,13 +94,6 @@ public class BidsService {
             return updateLeaderMaxAmount(productId, bidderId, bidderMaxAmount, currentPrice, currentBidMaxAmount);
         }
 
-        // CASE: bidderMaxAmount > currentBidMaxAmount => bidder becomes leader
-        if (bidderMaxAmount.compareTo(currentBidMaxAmount) > 0) {
-            return bidderWins(bidderMaxAmount, productId, bidderId, step, currentBidMaxAmount);
-        }
-
-        // bidderMaxAmount <= currentBidMaxAmount => bidder cannot become leader
-
         // CASE: bidderMaxAmount < currentPrice + step => reject, NO DB CHANGES
         BigDecimal minRequired = currentPrice.add(step);
         if (bidderMaxAmount.compareTo(minRequired) < 0) {
@@ -113,7 +106,13 @@ public class BidsService {
                     "Bid too low. You must bid at least " + minRequired);
         }
 
-        // CASE: valid but outbid
+        // CASE: bidderMaxAmount > currentBidMaxAmount => bidder becomes leader
+        if (bidderMaxAmount.compareTo(currentBidMaxAmount) > 0) {
+            return bidderWins(bidderMaxAmount, productId, bidderId, step, currentBidMaxAmount);
+        }
+
+        // bidderMaxAmount <= currentBidMaxAmount => bidder cannot become leader
+        // CASE: outbid
         return outBid(bidderMaxAmount, productId, step, currentBidMaxAmount, currentLeaderBidId);
     }
 
