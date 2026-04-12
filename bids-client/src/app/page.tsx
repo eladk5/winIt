@@ -307,6 +307,7 @@ export default function CatalogPage() {
 
   const [sliderMinPrice, setSliderMinPrice] = useState<number>(PRICE_MIN_BOUND);
   const [sliderMaxPrice, setSliderMaxPrice] = useState<number>(PRICE_MAX_BOUND);
+  const [showItemsWithImageOnly, setShowItemsWithImageOnly] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -405,6 +406,7 @@ export default function CatalogPage() {
         const items = await listProducts({
           category: selectedCategory || undefined,
           search: search || undefined,
+          hasImage: showItemsWithImageOnly || undefined,
           minPrice: selectedMinPrice > PRICE_MIN_BOUND ? selectedMinPrice : undefined,
           maxPrice: selectedMaxPrice < currentMaxBoundRef.current ? selectedMaxPrice : undefined,
           sortBy: selectedSort.sortBy,
@@ -432,7 +434,7 @@ export default function CatalogPage() {
     return () => {
       isMounted = false;
     };
-  }, [search, selectedCategory, selectedMaxPrice, selectedMinPrice, selectedSort]);
+  }, [search, selectedCategory, selectedMaxPrice, selectedMinPrice, selectedSort, showItemsWithImageOnly]);
 
   // Effect to determine the absolute maximum price bound for the current category/search
   useEffect(() => {
@@ -632,6 +634,25 @@ export default function CatalogPage() {
                   </span>
                 </div>
               </div>
+            </div>
+
+            {/* ── Divider ── */}
+            <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+
+            {/* ── Image Filter ── */}
+            <div>
+              <label className="flex cursor-pointer items-center justify-between rounded-xl border border-slate-200/60 bg-white px-3 py-2.5 transition-all hover:bg-slate-50">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[18px] text-slate-400">image</span>
+                  <span className="text-[13px] font-medium text-slate-600">Has Image Only</span>
+                </div>
+                <input
+                  checked={showItemsWithImageOnly}
+                  className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
+                  onChange={(e) => setShowItemsWithImageOnly(e.target.checked)}
+                  type="checkbox"
+                />
+              </label>
             </div>
 
             {/* ── Divider ── */}
