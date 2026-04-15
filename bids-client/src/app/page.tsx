@@ -113,10 +113,10 @@ function ProductCard({
   }, [product.currentPrice, product.minRequiredBid]);
 
   const minimumBid = useMemo(() => {
-    if (myBidEntry?.status.toUpperCase() === "WINNING") {
+    if (myBidEntry?.status?.toUpperCase() === "WINNING" && Number.isFinite(myBidEntry.myMaxBid)) {
       return Number((myBidEntry.myMaxBid + 0.01).toFixed(2));
     }
-    return minRequiredBid;
+    return Number.isFinite(minRequiredBid) ? minRequiredBid : 0.01;
   }, [minRequiredBid, myBidEntry]);
 
   async function handleQuickBid(event: FormEvent<HTMLFormElement>) {
@@ -143,14 +143,14 @@ function ProductCard({
         maxAmount: numericBid,
       });
 
-      setCurrentPrice(response.currentPrice);
-      setMinRequiredBid(response.nextMinRequiredBid);
+      setCurrentPrice(response.currentPrice ?? 0);
+      setMinRequiredBid(response.nextMinRequiredBid ?? (response.currentPrice ?? 0) + 0.01);
       setBidAmount("");
-      setQuickBidMessage(parseBidFeedback(response.status, response.message, response.currentPrice, response.minRequiredMax));
-      if (response.status.toUpperCase() === "REJECT_TOO_LOW" && response.minRequiredMax !== null) {
+      setQuickBidMessage(parseBidFeedback(response.status ?? "", response.message ?? "", response.currentPrice ?? 0, response.minRequiredMax ?? null));
+      if (response.status?.toUpperCase() === "REJECT_TOO_LOW" && response.minRequiredMax !== null && response.minRequiredMax !== undefined) {
         setBidAmount(String(response.minRequiredMax));
       }
-      const normalized = response.status.toUpperCase();
+      const normalized = (response.status ?? "").toUpperCase();
       if (normalized === "WINNING" || normalized === "OUTBID" || normalized === "WON" || normalized === "LOST") {
         onBidStatusChange(product.id, {
           productId: product.id,
@@ -167,7 +167,7 @@ function ProductCard({
       if (normalized === "WINNING" || normalized === "OUTBID") {
         void showBidStatusModal({
           isWinning: normalized === "WINNING",
-          isUpdateOnly: normalized === "WINNING" && myBidEntry?.status.toUpperCase() === "WINNING",
+          isUpdateOnly: normalized === "WINNING" && myBidEntry?.status?.toUpperCase() === "WINNING",
           currentPrice: response.currentPrice,
           onLearnMore: () => {
             router.push("/help");
@@ -184,8 +184,8 @@ function ProductCard({
       let tone: QuickBidTone = "red";
       if (
         message.includes("New max bid must be higher") &&
-        myBidEntry?.status.toUpperCase() === "WINNING" &&
-        myBidEntry.myMaxBid
+        myBidEntry?.status?.toUpperCase() === "WINNING" &&
+        myBidEntry?.myMaxBid
       ) {
         message = formatRaiseMaxBidMessage(myBidEntry.myMaxBid);
         tone = "amber";
@@ -217,8 +217,8 @@ function ProductCard({
           <h3 className="truncate text-base font-semibold text-slate-900">{product.name}</h3>
           <div className="mt-2 min-h-[1.75rem] text-right">
             {myBidEntry && (
-              <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold uppercase ${bidStatusTone(myBidEntry.status.toUpperCase() as MyBidStatus)}`}>
-                Your Bid: {myBidEntry.status.toUpperCase()}
+              <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold uppercase ${bidStatusTone((myBidEntry.status ?? "").toUpperCase() as MyBidStatus)}`}>
+                Your Bid: {(myBidEntry.status ?? "").toUpperCase()}
               </span>
             )}
           </div>
@@ -247,7 +247,7 @@ function ProductCard({
                 onChange={(event) => {
                   setBidAmount(event.target.value);
                 }}
-                placeholder={minimumBid.toFixed(2)}
+                placeholder={(minimumBid ?? 0).toFixed(2)}
                 step="0.01"
                 type="number"
                 value={bidAmount}
@@ -259,7 +259,7 @@ function ProductCard({
                 type="submit"
               >
                 <span className="material-symbols-outlined text-[16px]">gavel</span>
-                {isSubmittingBid ? "..." : myBidEntry?.status.toUpperCase() === "WINNING" ? "Raise" : "Bid"}
+                {isSubmittingBid ? "..." : myBidEntry?.status?.toUpperCase() === "WINNING" ? "Raise" : "Bid"}
               </button>
             </form>
 

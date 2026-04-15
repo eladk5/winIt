@@ -8,7 +8,7 @@ type BidStatusModalOptions = {
 };
 
 function formatPriceSnapshot(currentPrice?: number): string {
-  if (currentPrice === undefined || Number.isNaN(currentPrice)) {
+  if (currentPrice === undefined || currentPrice === null || !Number.isFinite(currentPrice)) {
     return "Latest price updated";
   }
 

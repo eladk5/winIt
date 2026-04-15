@@ -125,13 +125,13 @@ export default function ProductDetailsPage() {
 
   const timeLeft = product ? formatTimeLeft(product.endTime, nowMs) : "N/A";
   const isAuctionEnded = timeLeft === "Ended";
+  const rawMyBidStatus = myBidEntry?.status?.toUpperCase() ?? "";
   const normalizedMyBidStatus =
-    myBidEntry &&
-    (myBidEntry.status.toUpperCase() === "WINNING" ||
-      myBidEntry.status.toUpperCase() === "OUTBID" ||
-      myBidEntry.status.toUpperCase() === "WON" ||
-      myBidEntry.status.toUpperCase() === "LOST")
-      ? (myBidEntry.status.toUpperCase() as MyBidStatus)
+    (rawMyBidStatus === "WINNING" ||
+      rawMyBidStatus === "OUTBID" ||
+      rawMyBidStatus === "WON" ||
+      rawMyBidStatus === "LOST")
+      ? (rawMyBidStatus as MyBidStatus)
       : null;
 
   const minimumBid = useMemo(() => {
@@ -139,11 +139,11 @@ export default function ProductDetailsPage() {
       return 0;
     }
 
-    if (normalizedMyBidStatus === "WINNING" && myBidEntry) {
+    if (normalizedMyBidStatus === "WINNING" && myBidEntry && Number.isFinite(myBidEntry.myMaxBid)) {
       return Number((myBidEntry.myMaxBid + 0.01).toFixed(2));
     }
 
-    return product.minRequiredBid;
+    return Number.isFinite(product.minRequiredBid) ? product.minRequiredBid : (currentPrice + 0.01);
   }, [product, normalizedMyBidStatus, myBidEntry]);
 
   async function handlePlaceBid(event: FormEvent<HTMLFormElement>) {
@@ -174,10 +174,10 @@ export default function ProductDetailsPage() {
         maxAmount: numericBid,
       });
 
-      setCurrentPrice(response.currentPrice);
-      setProduct((prev) => (prev ? { ...prev, currentPrice: response.currentPrice, minRequiredBid: response.nextMinRequiredBid } : null));
+      setCurrentPrice(response.currentPrice ?? 0);
+      setProduct((prev) => (prev ? { ...prev, currentPrice: response.currentPrice ?? 0, minRequiredBid: response.nextMinRequiredBid ?? (response.currentPrice ?? 0) + 0.01 } : null));
       setFeedback(parseBidFeedback(response));
-      const normalizedStatus = response.status.toUpperCase();
+      const normalizedStatus = (response.status ?? "").toUpperCase();
 
       if (
         normalizedStatus === "WINNING" ||
@@ -211,7 +211,7 @@ export default function ProductDetailsPage() {
         });
       }
 
-      if (response.minRequiredMax !== null && response.status.toUpperCase() === "REJECT_TOO_LOW") {
+      if (response.minRequiredMax != null && response.status?.toUpperCase() === "REJECT_TOO_LOW") {
         setBidAmount(String(response.minRequiredMax));
       } else {
         setBidAmount("");
@@ -225,8 +225,8 @@ export default function ProductDetailsPage() {
       let message = error instanceof ApiError ? error.message : "Unable to place bid right now.";
       let tone: "red" | "amber" = "red";
 
-      if (message.includes("New max bid must be higher") && normalizedMyBidStatus === "WINNING" && myBidEntry?.myMaxBid) {
-        message = formatRaiseMaxBidMessage(myBidEntry.myMaxBid);
+      if (message.includes("New max bid must be higher") && normalizedMyBidStatus === "WINNING" && Number.isFinite(myBidEntry?.myMaxBid)) {
+        message = formatRaiseMaxBidMessage(myBidEntry!.myMaxBid);
         tone = "amber";
       }
 
@@ -339,7 +339,7 @@ export default function ProductDetailsPage() {
 }
 
 function parseBidFeedback(response: PlaceBidResponse): BidFeedback {
-  const status = response.status.toUpperCase();
+  const status = (response.status ?? "").toUpperCase();
 
   if (status === "WINNING") {
     return {

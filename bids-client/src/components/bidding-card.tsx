@@ -115,7 +115,7 @@ export function BiddingCard({
                     min={minimumBid}
                     name="bid"
                     onChange={(event) => onBidAmountChange(event.target.value)}
-                    placeholder={minimumBid.toFixed(2)}
+                    placeholder={(minimumBid ?? 0).toFixed(2)}
                     step="0.01"
                     type="number"
                     value={bidAmount}
