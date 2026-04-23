@@ -149,9 +149,9 @@ export type EditProfileRequest = {
   firstName?: string;
   lastName?: string;
   mobilePhone?: string;
-  city?: string;
-  street?: string;
-  zipCode?: string;
+  city?: string | null;
+  street?: string | null;
+  zipCode?: string | null;
 };
 
 export type MeProfileResponse = {

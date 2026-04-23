@@ -214,26 +214,13 @@ export default function DashboardPage() {
     }
 
     const payload = {
-      firstName: profileForm.firstName || undefined,
-      lastName: profileForm.lastName || undefined,
-      mobilePhone: profileForm.mobilePhone || undefined,
-      city: profileForm.city || undefined,
-      street: profileForm.street || undefined,
-      zipCode: profileForm.zipCode || undefined,
+      firstName: profileForm.firstName.trim(),
+      lastName: profileForm.lastName.trim(),
+      mobilePhone: profileForm.mobilePhone.trim(),
+      city: profileForm.city.trim() || null,
+      street: profileForm.street.trim() || null,
+      zipCode: profileForm.zipCode.trim() || null,
     };
-
-    if (
-      payload.firstName === undefined &&
-      payload.lastName === undefined &&
-      payload.mobilePhone === undefined &&
-      payload.city === undefined &&
-      payload.street === undefined &&
-      payload.zipCode === undefined
-    ) {
-      setProfileSavedMessage(null);
-      setErrorMessage("Enter at least one field before saving.");
-      return;
-    }
 
     setSavingProfile(true);
     setErrorMessage(null);
