@@ -3,6 +3,8 @@ package com.example.bids_server;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -25,7 +27,6 @@ import com.example.bids_server.repository.ProductsRepository;
 import com.example.bids_server.repository.UsersRepository;
 import com.example.bids_server.service.CurrentUserService;
 import com.example.bids_server.service.ProductsService;
-import com.example.bids_server.service.ProductsService.UpdateProductRequest;
 
 @SpringBootTest
 @Transactional
@@ -41,6 +42,8 @@ class ProductsServiceTest {
         private BidsRepository bidsRepository;
         @Autowired
         private JdbcTemplate jdbcTemplate;
+        @Autowired
+        private ObjectMapper objectMapper;
 
         @MockBean
         private CurrentUserService currentUserService;
@@ -129,14 +132,14 @@ class ProductsServiceTest {
 
         @Test
         void updateProduct_success_allFieldsUpdated() {
-                UpdateProductRequest req = new UpdateProductRequest(
-                                "New Name",
-                                "New Description",
-                                "FURNITURE",
-                                "New City",
-                                "http://img.com/new.jpg",
-                                new BigDecimal("200.00"),
-                                60); 
+                ObjectNode req = objectMapper.createObjectNode()
+                                .put("name", "New Name")
+                                .put("description", "New Description")
+                                .put("category", "FURNITURE")
+                                .put("deliveryLocation", "New City")
+                                .put("imageUrl", "http://img.com/new.jpg")
+                                .put("startingPrice", new BigDecimal("200.00"))
+                                .put("durationMinutes", 60);
 
                 Product updated = productsService.updateProduct(productId, req);
 
@@ -147,7 +150,7 @@ class ProductsServiceTest {
                 assertEquals("New City", updated.deliveryLocation());
                 assertEquals("http://img.com/new.jpg", updated.imageUrl());
                 assertEquals(0, new BigDecimal("200.00").compareTo(updated.startingPrice()));
-                assertEquals(0, new BigDecimal("200.00").compareTo(updated.currentPrice())); 
+                assertEquals(0, new BigDecimal("200.00").compareTo(updated.currentPrice()));
 
                 Product dbProduct = productsRepository.findById(productId).orElseThrow();
                 assertEquals("New Name", dbProduct.name());
@@ -161,14 +164,9 @@ class ProductsServiceTest {
 
         @Test
         void updateProduct_success_partialUpdateWithoutImage() {
-                UpdateProductRequest req = new UpdateProductRequest(
-                                "Partial Update Name",
-                                null, // description not changed
-                                null, // category not changed
-                                "Partial City",
-                                null, // image not changed
-                                null, // startingPrice not changed
-                                null); // duration not changed
+                ObjectNode req = objectMapper.createObjectNode()
+                                .put("name", "Partial Update Name")
+                                .put("deliveryLocation", "Partial City");
 
                 Product updated = productsService.updateProduct(productId, req);
 
@@ -189,9 +187,37 @@ class ProductsServiceTest {
         }
 
         @Test
+        void updateProduct_success_explicitNullClearsDescriptionAndImage() {
+                ObjectNode req = objectMapper.createObjectNode()
+                                .put("name", "Cleared Fields Name")
+                                .put("deliveryLocation", "Cleared City")
+                                .putNull("description")
+                                .putNull("imageUrl");
+
+                Product updated = productsService.updateProduct(productId, req);
+
+                assertNotNull(updated);
+                assertEquals("Cleared Fields Name", updated.name());
+                assertNull(updated.description());
+                assertEquals("Cleared City", updated.deliveryLocation());
+                assertNull(updated.imageUrl());
+
+                Product dbProduct = productsRepository.findById(productId).orElseThrow();
+                assertEquals("Cleared Fields Name", dbProduct.name());
+                assertNull(dbProduct.description());
+                assertEquals("Cleared City", dbProduct.deliveryLocation());
+                assertNull(dbProduct.imageUrl());
+        }
+
+        @Test
         void updateProduct_failure_productNotFound() {
-                UpdateProductRequest req = new UpdateProductRequest(
-                                "Name", "Desc", "FURNITURE", "City", null, BigDecimal.ONE, 10);
+                ObjectNode req = objectMapper.createObjectNode()
+                                .put("name", "Name")
+                                .put("description", "Desc")
+                                .put("category", "FURNITURE")
+                                .put("deliveryLocation", "City")
+                                .put("startingPrice", BigDecimal.ONE)
+                                .put("durationMinutes", 10);
 
                 ResponseStatusException ex = assertThrows(ResponseStatusException.class,
                                 () -> productsService.updateProduct(99999L, req));
@@ -202,10 +228,15 @@ class ProductsServiceTest {
 
         @Test
         void updateProduct_failure_userNotOwner() {
-                when(currentUserService.requireAuthenticatedUserId()).thenReturn(otherUserId); 
+                when(currentUserService.requireAuthenticatedUserId()).thenReturn(otherUserId);
 
-                UpdateProductRequest req = new UpdateProductRequest(
-                                "Name", "Desc", "FURNITURE", "City", null, BigDecimal.ONE, 10);
+                ObjectNode req = objectMapper.createObjectNode()
+                                .put("name", "Name")
+                                .put("description", "Desc")
+                                .put("category", "FURNITURE")
+                                .put("deliveryLocation", "City")
+                                .put("startingPrice", BigDecimal.ONE)
+                                .put("durationMinutes", 10);
 
                 ResponseStatusException ex = assertThrows(ResponseStatusException.class,
                                 () -> productsService.updateProduct(productId, req));
@@ -223,8 +254,13 @@ class ProductsServiceTest {
                                 "UPDATE products SET leading_bid_id = (SELECT id FROM bids WHERE product_id = ? LIMIT 1) WHERE id = ?",
                                 productId, productId);
 
-                UpdateProductRequest req = new UpdateProductRequest(
-                                "Name", "Desc", "FURNITURE", "City", null, BigDecimal.ONE, 10);
+                ObjectNode req = objectMapper.createObjectNode()
+                                .put("name", "Name")
+                                .put("description", "Desc")
+                                .put("category", "FURNITURE")
+                                .put("deliveryLocation", "City")
+                                .put("startingPrice", BigDecimal.ONE)
+                                .put("durationMinutes", 10);
 
                 ResponseStatusException ex = assertThrows(ResponseStatusException.class,
                                 () -> productsService.updateProduct(productId, req));
@@ -235,8 +271,13 @@ class ProductsServiceTest {
 
         @Test
         void updateProduct_failure_invalidName() {
-                UpdateProductRequest req = new UpdateProductRequest(
-                                "", "Desc", "FURNITURE", "City", null, BigDecimal.ONE, 10); // Blank name
+                ObjectNode req = objectMapper.createObjectNode()
+                                .put("name", "")
+                                .put("description", "Desc")
+                                .put("category", "FURNITURE")
+                                .put("deliveryLocation", "City")
+                                .put("startingPrice", BigDecimal.ONE)
+                                .put("durationMinutes", 10); // Blank name
 
                 IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                                 () -> productsService.updateProduct(productId, req));
@@ -246,9 +287,13 @@ class ProductsServiceTest {
 
         @Test
         void updateProduct_failure_invalidCategory() {
-                UpdateProductRequest req = new UpdateProductRequest(
-                                "Name", "Desc", "INVALID_CATEGORY", "City", null, BigDecimal.ONE, 10); // Invalid
-                                                                                                       // category
+                ObjectNode req = objectMapper.createObjectNode()
+                                .put("name", "Name")
+                                .put("description", "Desc")
+                                .put("category", "INVALID_CATEGORY")
+                                .put("deliveryLocation", "City")
+                                .put("startingPrice", BigDecimal.ONE)
+                                .put("durationMinutes", 10); // Invalid category
 
                 IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                                 () -> productsService.updateProduct(productId, req));

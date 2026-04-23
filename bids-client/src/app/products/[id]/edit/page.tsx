@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import Link from "next/link";
@@ -17,15 +16,6 @@ import {
 import { uploadImageToCloudinary } from "@/lib/cloudinary";
 import { resolveImageUrl } from "@/lib/format";
 
-function categoryLabel(category: string): string {
-  return category
-    .replace(/_/g, " ")
-    .toLowerCase()
-    .replace(/(^|\s)\S/g, (char) => char.toUpperCase());
-}
-
-
-
 function productToForm(product: ProductDetailsResponse): ProductFormState {
   const endDateTime = new Date(product.endTime);
 
@@ -38,6 +28,7 @@ function productToForm(product: ProductDetailsResponse): ProductFormState {
     endDate: endDateTime,
     endTime: endDateTime,
     imageFile: null,
+    removeImage: false,
   };
 }
 
@@ -54,8 +45,6 @@ export default function EditProductPage() {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-
-  const minDateConfig = useMemo(() => new Date(), []);
 
   const previewUrl = useMemo(() => {
     if (!form?.imageFile) {
@@ -176,7 +165,7 @@ export default function EditProductPage() {
 
     try {
       // Upload new image to Cloudinary if one was selected
-      let imageUrl: string | undefined;
+      let imageUrl: string | null | undefined;
 
       if (form.imageFile) {
         setUploadingImage(true);
@@ -186,11 +175,15 @@ export default function EditProductPage() {
         } finally {
           setUploadingImage(false);
         }
+      } else if (form.removeImage) {
+        imageUrl = null;
       }
+
+      const trimmedDescription = form.description.trim();
 
       await updateProduct(productId, {
         name: form.name.trim(),
-        description: form.description.trim() || undefined,
+        description: trimmedDescription === "" ? null : trimmedDescription,
         category: form.category,
         deliveryLocation: form.deliveryLocation.trim(),
         imageUrl,
@@ -236,7 +229,7 @@ export default function EditProductPage() {
   }
 
   // Determine which image to show: new file preview > existing product image > placeholder
-  const displayImageUrl = previewUrl ?? resolveImageUrl(product.imageUrl);
+  const displayImageUrl = form.removeImage ? previewUrl : previewUrl ?? resolveImageUrl(product.imageUrl);
 
   return (
     <div className="min-h-screen bg-background-light font-display text-slate-900">

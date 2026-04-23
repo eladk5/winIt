@@ -1,12 +1,12 @@
 package com.example.bids_server.controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.example.bids_server.repository.Product;
 import com.example.bids_server.repository.ProductCategory;
 import com.example.bids_server.repository.ProductSearchQuery;
 import com.example.bids_server.service.ProductsService;
 import com.example.bids_server.service.ProductsService.CreateProductRequest;
 import com.example.bids_server.service.ProductsService.CreatedProduct;
-import com.example.bids_server.service.ProductsService.UpdateProductRequest;
 import jakarta.validation.Valid;
 
 import org.springframework.format.annotation.DateTimeFormat;
@@ -133,9 +133,10 @@ public class ProductsController {
     @PatchMapping(value = "/products/{id}")
     @Operation(summary = "Update product details")
     public ResponseEntity<ProductDetailsResponse> updateProduct(@PathVariable long id,
-            @RequestBody @Valid UpdateProductRequest req) {
-        Product updatedProduct = productsService.updateProduct(id, req);
-        return ResponseEntity.ok(ProductDetailsResponse.fromProduct(updatedProduct, productsService.calculateMinRequiredBid(updatedProduct)));
+            @RequestBody JsonNode body) {
+        Product updatedProduct = productsService.updateProduct(id, body);
+        return ResponseEntity.ok(ProductDetailsResponse.fromProduct(updatedProduct,
+                productsService.calculateMinRequiredBid(updatedProduct)));
     }
 
     @GetMapping("/products/{id}")

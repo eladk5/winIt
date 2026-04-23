@@ -11,6 +11,7 @@ export type ProductFormState = {
   endDate: Date | null;
   endTime: Date | null;
   imageFile: File | null;
+  removeImage: boolean;
 };
 
 type ProductFormProps = {
@@ -47,7 +48,7 @@ export function ProductForm({
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0] ?? null;
-    onChange({ imageFile: file });
+    onChange({ imageFile: file, removeImage: false });
   }
 
   return (
@@ -198,7 +199,18 @@ export function ProductForm({
           {form.imageFile ? "Replace image" : uploadButtonText}
         </label>
 
-        <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+        <div className="relative overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+          {displayImageUrl ? (
+            <button
+              aria-label="Remove image"
+              className="absolute right-3 top-3 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-500 shadow-sm ring-1 ring-slate-200 transition-colors hover:bg-red-50 hover:text-red-700 hover:ring-red-200"
+              onClick={() => onChange({ imageFile: null, removeImage: true })}
+              type="button"
+            >
+              <span className="material-symbols-outlined text-[18px]">close</span>
+            </button>
+          ) : null}
+
           {displayImageUrl ? (
             <img alt="Preview" className="aspect-[4/3] w-full object-cover" src={displayImageUrl} />
           ) : (

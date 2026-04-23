@@ -206,10 +206,10 @@ export type CreateProductResponse = {
 
 export type UpdateProductRequest = {
   name?: string;
-  description?: string;
+  description?: string | null;
   category?: string;
   deliveryLocation?: string;
-  imageUrl?: string;
+  imageUrl?: string | null;
   startingPrice?: number;
   durationMinutes?: number;
 };

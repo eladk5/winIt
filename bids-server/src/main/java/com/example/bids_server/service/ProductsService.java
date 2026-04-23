@@ -12,14 +12,18 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Data;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class ProductsService {
@@ -29,16 +33,19 @@ public class ProductsService {
     private final BidsRepository bidsRepository;
     private final MeRepository meRepository;
     private final BidIncrementPolicy incrementPolicy;
+    private final ObjectMapper objectMapper;
 
     public ProductsService(ProductsRepository productsRepository, CurrentUserService currentUserService,
             BidsRepository bidsRepository,
             MeRepository meRepository,
-            BidIncrementPolicy incrementPolicy) {
+            BidIncrementPolicy incrementPolicy,
+            ObjectMapper objectMapper) {
         this.productsRepository = productsRepository;
         this.currentUserService = currentUserService;
         this.bidsRepository = bidsRepository;
         this.meRepository = meRepository;
         this.incrementPolicy = incrementPolicy;
+        this.objectMapper = objectMapper;
     }
 
     public BigDecimal calculateMinRequiredBid(Product p) {
@@ -82,13 +89,21 @@ public class ProductsService {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime endTime = now.plusMinutes(req.durationMinutes());
 
+        String description = req.description() == null ? null : req.description().trim();
+        if (description != null && description.isEmpty())
+            description = null;
+
+        String imageUrl = req.imageUrl() == null ? null : req.imageUrl().trim();
+        if (imageUrl != null && imageUrl.isEmpty())
+            imageUrl = null;
+
         long newProductId = productsRepository.saveProduct(
                 sellerId,
                 req.name().trim(),
-                trimToNull(req.description()),
+                description,
                 cat.apiValue(),
                 req.deliveryLocation().trim(),
-                trimToNull(req.imageUrl()),
+                imageUrl,
                 now,
                 endTime,
                 req.startingPrice(),
@@ -98,8 +113,12 @@ public class ProductsService {
         return new CreatedProduct(newProductId, endTime);
     }
 
-    public Product updateProduct(long productId, UpdateProductRequest req) {
+    public Product updateProduct(long productId, JsonNode patchBody) {
         long currentUserId = currentUserService.requireAuthenticatedUserId();
+
+        if (patchBody == null || !patchBody.isObject()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid JSON body");
+        }
 
         Product existingProduct = productsRepository.findById(productId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
@@ -112,52 +131,86 @@ public class ProductsService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot edit product with active bids");
         }
 
-        String newName = Optional.ofNullable(req.name())
-                .map(String::trim)
-                .orElse(existingProduct.name());
-        String newDescription = Optional.ofNullable(req.description())
-                .map(this::trimToNull)
-                .orElse(existingProduct.description());
-        String newCategory = Optional.ofNullable(req.category())
-                .map(ProductCategory::fromString)
-                .map(ProductCategory::apiValue)
-                .orElse(existingProduct.category());
-        String newDeliveryLocation = Optional.ofNullable(req.deliveryLocation())
-                .map(String::trim)
-                .orElse(existingProduct.deliveryLocation());
-        BigDecimal newStartingPrice = Optional.ofNullable(req.startingPrice())
-                .orElse(existingProduct.startingPrice());
-        LocalDateTime newEndTime = Optional.ofNullable(req.durationMinutes())
-                .map(duration -> LocalDateTime.now().plusMinutes(duration))
-                .orElse(existingProduct.endTime());
+        Set<String> allowedFields = Set.of(
+                "name",
+                "description",
+                "category",
+                "deliveryLocation",
+                "imageUrl",
+                "startingPrice",
+                "durationMinutes");
+        patchBody.fieldNames().forEachRemaining(field -> {
+            if (!allowedFields.contains(field)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Field '" + field + "' cannot be updated");
+            }
+        });
 
-        String newImageUrl = req.imageUrl() != null ? trimToNull(req.imageUrl()) : existingProduct.imageUrl();
+        UpdateProductDto updateDto = new UpdateProductDto();
+        updateDto.setName(existingProduct.name());
+        updateDto.setDescription(existingProduct.description());
+        updateDto.setCategory(existingProduct.category());
+        updateDto.setDeliveryLocation(existingProduct.deliveryLocation());
+        updateDto.setImageUrl(existingProduct.imageUrl());
+        updateDto.setStartingPrice(existingProduct.startingPrice());
 
-        if (newName.isBlank())
+        try {
+            objectMapper.readerForUpdating(updateDto).readValue(patchBody);
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid JSON patch", e);
+        }
+
+        // Post-patch validation
+        if (updateDto.getName() == null || updateDto.getName().isBlank()) {
             throw new IllegalArgumentException("name is required");
-        if (newCategory == null)
-            throw new IllegalArgumentException("category is required");
-        if (newDeliveryLocation.isBlank())
+        }
+        if (updateDto.getDeliveryLocation() == null || updateDto.getDeliveryLocation().isBlank()) {
             throw new IllegalArgumentException("deliveryLocation is required");
+        }
+        if (updateDto.getStartingPrice() == null || updateDto.getStartingPrice().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "startingPrice must be greater than 0");
+        }
+        if (updateDto.getDurationMinutes() != null && updateDto.getDurationMinutes() < 10) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "durationMinutes must be at least 10");
+        }
 
-        Product updatedProduct = productsRepository.updateProduct(
+        String newCategoryApiValue;
+        ProductCategory cat = ProductCategory.fromString(updateDto.getCategory());
+        if (cat == null)
+            throw new IllegalArgumentException("category is required");
+        newCategoryApiValue = cat.apiValue();
+
+        LocalDateTime newEndTime = updateDto.getDurationMinutes() != null
+                ? LocalDateTime.now().plusMinutes(updateDto.getDurationMinutes())
+                : existingProduct.endTime();
+
+        String description = updateDto.getDescription() == null ? null : updateDto.getDescription().trim();
+        if (description != null && description.isEmpty())
+            description = null;
+
+        String imageUrl = updateDto.getImageUrl() == null ? null : updateDto.getImageUrl().trim();
+        if (imageUrl != null && imageUrl.isEmpty())
+            imageUrl = null;
+
+        return productsRepository.updateProduct(
                 productId,
-                newName,
-                newDescription,
-                newCategory,
-                newDeliveryLocation,
-                newImageUrl,
-                newStartingPrice,
+                updateDto.getName().trim(),
+                description,
+                newCategoryApiValue,
+                updateDto.getDeliveryLocation().trim(),
+                imageUrl,
+                updateDto.getStartingPrice(),
                 newEndTime);
-
-        return updatedProduct;
     }
 
-    private String trimToNull(String s) {
-        if (s == null)
-            return null;
-        String t = s.trim();
-        return t.isEmpty() ? null : t;
+    @Data
+    public static class UpdateProductDto {
+        private String name;
+        private String description;
+        private String category;
+        private String deliveryLocation;
+        private String imageUrl;
+        private BigDecimal startingPrice;
+        private Integer durationMinutes;
     }
 
     public record CreateProductRequest(
@@ -168,16 +221,6 @@ public class ProductsService {
             String imageUrl,
             @NotNull @Positive BigDecimal startingPrice,
             @NotNull @Min(10) Integer durationMinutes) {
-    }
-
-    public record UpdateProductRequest(
-            String name,
-            String description,
-            String category,
-            String deliveryLocation,
-            String imageUrl,
-            @Positive BigDecimal startingPrice,
-            @Min(10) Integer durationMinutes) {
     }
 
     public record CreatedProduct(
@@ -204,7 +247,8 @@ public class ProductsService {
         }
 
         long winningBidderId = bidsRepository.getBidderId(product.leadingBidId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Winning bid not found"));
+                .orElseThrow(
+                        () -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Winning bid not found"));
 
         if (winningBidderId != currentUserId) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not the winning bidder");
@@ -219,7 +263,6 @@ public class ProductsService {
                 sellerProfile.mobilePhone(),
                 sellerProfile.city(),
                 sellerProfile.street(),
-                sellerProfile.zipCode()
-        );
+                sellerProfile.zipCode());
     }
 }
