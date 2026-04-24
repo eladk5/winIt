@@ -28,6 +28,7 @@ function createDefaultForm(): ProductFormState {
     endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     endTime: new Date(new Date().setHours(new Date().getHours() + 24, 0, 0, 0)),
     imageFile: null,
+    removeImage: false,
   };
 }
 
