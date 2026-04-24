@@ -2,8 +2,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { FormEvent, Suspense, useEffect, useMemo, useState } from "react";
 
 import {
   ApiError,
@@ -68,15 +68,10 @@ function initialTabFromQuery(tab: string | null): DashboardTab {
   return "bids";
 }
 
-export default function DashboardPage() {
+function DashboardContent() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<DashboardTab>(() => {
-    if (typeof window === "undefined") {
-      return "bids";
-    }
-
-    return initialTabFromQuery(new URLSearchParams(window.location.search).get("tab"));
-  });
+  const searchParams = useSearchParams();
+  const activeTab = initialTabFromQuery(searchParams.get("tab"));
   const [user, setUser] = useState<MeResponse | null>(null);
   const [bidItems, setBidItems] = useState<MyBidHistoryItem[]>([]);
   const [salesItems, setSalesItems] = useState<MySellingProductItem[]>([]);
@@ -104,18 +99,7 @@ export default function DashboardPage() {
   const [contactLoading, setContactLoading] = useState(false);
   const [contactError, setContactError] = useState<string | null>(null);
 
-  useEffect(() => {
-    function syncTabFromLocation() {
-      setActiveTab(initialTabFromQuery(new URLSearchParams(window.location.search).get("tab")));
-    }
 
-    syncTabFromLocation();
-    window.addEventListener("popstate", syncTabFromLocation);
-
-    return () => {
-      window.removeEventListener("popstate", syncTabFromLocation);
-    };
-  }, []);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -200,8 +184,7 @@ export default function DashboardPage() {
   }, [profileForm.firstName, profileForm.lastName, user?.username]);
 
   function switchTab(nextTab: DashboardTab) {
-    setActiveTab(nextTab);
-    router.replace(`/dashboard?tab=${nextTab}`, { scroll: false });
+    window.location.href = `/dashboard?tab=${nextTab}`;
   }
 
   async function handleProfileSave(event: FormEvent<HTMLFormElement>) {
@@ -298,19 +281,37 @@ export default function DashboardPage() {
             <h2 className="text-2xl font-bold text-slate-900">{displayName}</h2>
             <p className="font-medium text-slate-500">@{user?.username ?? "user"}</p>
             <div className="mt-2 flex flex-wrap justify-center gap-4 md:justify-start">
-              <span className="flex items-center gap-1 text-sm font-semibold text-slate-700">
+              <button
+                className="flex items-center gap-1 text-sm font-semibold text-slate-700 transition-colors hover:text-primary"
+                onClick={() => {
+                  switchTab("bids");
+                }}
+                type="button"
+              >
                 <span className="material-symbols-outlined text-sm text-primary">gavel</span>
                 {bidItems.length} Bids
-              </span>
-              <span className="flex items-center gap-1 text-sm font-semibold text-slate-700">
+              </button>
+              <button
+                className="flex items-center gap-1 text-sm font-semibold text-slate-700 transition-colors hover:text-primary"
+                onClick={() => {
+                  switchTab("sales");
+                }}
+                type="button"
+              >
                 <span className="material-symbols-outlined text-sm text-primary">storefront</span>
                 {activeSalesCount} Active Sales
-              </span>
+              </button>
               {profileForm.city.trim() && (
-                <span className="flex items-center gap-1 text-sm font-semibold text-slate-700">
+                <button
+                  className="flex items-center gap-1 text-sm font-semibold text-slate-700 transition-colors hover:text-primary"
+                  onClick={() => {
+                    switchTab("profile");
+                  }}
+                  type="button"
+                >
                   <span className="material-symbols-outlined text-sm text-primary">location_on</span>
                   {profileForm.city}
-                </span>
+                </button>
               )}
             </div>
           </div>
@@ -329,11 +330,10 @@ export default function DashboardPage() {
           <div className="border-b border-slate-200">
             <nav aria-label="Tabs" className="flex gap-8">
               <button
-                className={`flex items-center gap-2 border-b-2 px-1 py-4 text-sm transition-all ${
-                  activeTab === "bids"
+                className={`flex items-center gap-2 border-b-2 px-1 py-4 text-sm transition-all ${activeTab === "bids"
                     ? "border-primary font-bold text-primary"
                     : "border-transparent font-medium text-slate-500 hover:border-slate-300 hover:text-slate-700"
-                }`}
+                  }`}
                 onClick={() => {
                   switchTab("bids");
                 }}
@@ -343,11 +343,10 @@ export default function DashboardPage() {
                 My Bids
               </button>
               <button
-                className={`flex items-center gap-2 border-b-2 px-1 py-4 text-sm transition-all ${
-                  activeTab === "sales"
+                className={`flex items-center gap-2 border-b-2 px-1 py-4 text-sm transition-all ${activeTab === "sales"
                     ? "border-primary font-bold text-primary"
                     : "border-transparent font-medium text-slate-500 hover:border-slate-300 hover:text-slate-700"
-                }`}
+                  }`}
                 onClick={() => {
                   switchTab("sales");
                 }}
@@ -357,11 +356,10 @@ export default function DashboardPage() {
                 My Sales
               </button>
               <button
-                className={`flex items-center gap-2 border-b-2 px-1 py-4 text-sm transition-all ${
-                  activeTab === "profile"
+                className={`flex items-center gap-2 border-b-2 px-1 py-4 text-sm transition-all ${activeTab === "profile"
                     ? "border-primary font-bold text-primary"
                     : "border-transparent font-medium text-slate-500 hover:border-slate-300 hover:text-slate-700"
-                }`}
+                  }`}
                 onClick={() => {
                   switchTab("profile");
                 }}
@@ -475,15 +473,14 @@ export default function DashboardPage() {
                             </div>
                           )}
                           <span
-                            className={`absolute right-3 top-3 rounded px-2 py-1 text-[10px] font-bold uppercase text-white ${
-                              tone === "green"
+                            className={`absolute right-3 top-3 rounded px-2 py-1 text-[10px] font-bold uppercase text-white ${tone === "green"
                                 ? "bg-green-500"
                                 : tone === "red"
                                   ? "bg-red-500"
                                   : tone === "amber"
                                     ? "bg-amber-500"
                                     : "bg-slate-500"
-                            }`}
+                              }`}
                           >
                             {item.status}
                           </span>
@@ -550,9 +547,8 @@ export default function DashboardPage() {
                   <div className="flex flex-col gap-2">
                     <label className="text-sm font-bold text-slate-700">First Name</label>
                     <input
-                      className={`rounded-lg border-slate-200 focus:border-primary focus:ring-primary ${
-                        isFieldInvalid("firstName") ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
-                      }`}
+                      className={`rounded-lg border-slate-200 focus:border-primary focus:ring-primary ${isFieldInvalid("firstName") ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                        }`}
                       onBlur={() => {
                         setTouchedFields((previous) => ({ ...previous, firstName: true }));
                       }}
@@ -570,9 +566,8 @@ export default function DashboardPage() {
                   <div className="flex flex-col gap-2">
                     <label className="text-sm font-bold text-slate-700">Last Name</label>
                     <input
-                      className={`rounded-lg border-slate-200 focus:border-primary focus:ring-primary ${
-                        isFieldInvalid("lastName") ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
-                      }`}
+                      className={`rounded-lg border-slate-200 focus:border-primary focus:ring-primary ${isFieldInvalid("lastName") ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                        }`}
                       onBlur={() => {
                         setTouchedFields((previous) => ({ ...previous, lastName: true }));
                       }}
@@ -590,9 +585,8 @@ export default function DashboardPage() {
                   <div className="flex flex-col gap-2">
                     <label className="text-sm font-bold text-slate-700">Phone Number</label>
                     <input
-                      className={`rounded-lg border-slate-200 focus:border-primary focus:ring-primary ${
-                        isFieldInvalid("mobilePhone") ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
-                      }`}
+                      className={`rounded-lg border-slate-200 focus:border-primary focus:ring-primary ${isFieldInvalid("mobilePhone") ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                        }`}
                       onBlur={() => {
                         setTouchedFields((previous) => ({ ...previous, mobilePhone: true }));
                       }}
@@ -757,6 +751,24 @@ export default function DashboardPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-background-light px-6 py-8 lg:px-40">
+          <div className="space-y-4">
+            <div className="h-12 animate-pulse rounded-lg bg-slate-100"></div>
+            <div className="h-40 animate-pulse rounded-lg bg-slate-100"></div>
+            <div className="h-96 animate-pulse rounded-lg bg-slate-100"></div>
+          </div>
+        </div>
+      }
+    >
+      <DashboardContent />
+    </Suspense>
   );
 }
 
