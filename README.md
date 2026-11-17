@@ -46,3 +46,14 @@ For more robust instructions, environment configuration, and technical details, 
 
 - [**Backend (Server) README**](./bids-server/README.md) – Covers API documentation (Swagger), H2 Database console, and project structure.
 - [**Frontend (Client) README**](./bids-client/README.md) – Covers the Next.js tech stack, routing, and UI components.
+
+## Contributors
+
+- **Elad Karo** — Backend (Java 21, Spring Boot):
+  REST APIs, authentication, database integration,
+  auction and proxy bidding logic, and testing.
+
+- **eladbouhnik** — Frontend (TypeScript, Next.js):
+  User interface, client-side functionality,
+  and backend API integration.
+

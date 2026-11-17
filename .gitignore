@@ -39,3 +39,4 @@ data/
 
 bids-server/uploads
 *.key
+.m2/*
