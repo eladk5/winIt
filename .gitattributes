@@ -1,2 +1,1 @@
-
-bids-client/** linguist-detectable=false
+bids-client/** -linguist-detectable
